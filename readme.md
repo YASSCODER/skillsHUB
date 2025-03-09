@@ -50,3 +50,10 @@ SkillsHUB is a **Node.js + TypeScript** backend server designed for **managing u
 ├── yarn.lock                   # Yarn lock file
 └── README.md                   # Project documentation
 ```
+
+## 🛠️ How to run
+
+```sh
+git pull origin main
+yarn dev
+```
