@@ -1,23 +1,45 @@
 name: PR Notification to Discord
-on: push
+on:
+  push:
+    pull_request:
+      branches:
+        types: [opened, closed]
 
 jobs:
   notify-discord:
     runs-on: ubuntu-latest
     steps:
-      - name: Format Commit Messages
+      - name: Check Event Type
         run: |
-          # Extract commit messages
+          echo "GitHub Event: ${{ github.event_name }}"
+
+      - name: Format Commit Messages for Push Event
+        if: github.event_name == 'push'
+        run: |
           COMMIT_MESSAGES=$(echo '${{ toJson(github.event.commits) }}' | jq -r '[.[] | "- " + .message] | join("\n")')
 
-          # Construct payload
           PAYLOAD=$(jq -n --arg ref "${{ github.ref }}" \
                               --arg pusher "${{ github.event.pusher.name }}" \
                               --arg compare "${{ github.event.compare }}" \
                               --arg commits "$COMMIT_MESSAGES" \
                               '{"content": "**New Push Event!** 🚀\n**Branch:** \($ref)\n**By:** \($pusher)\n🔗 **Compare:** \($compare)\n\n🔄 **Commits:**\n\($commits)"}')
 
-          # Send message to Discord
-          curl -H "Content-Type: application/json" -X POST \
-               -d "$PAYLOAD" \
+          curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" \
+               "https://discord.com/api/webhooks/1348409326573977760/I6vRzZxUh5nK7QDI9ZcGBKLfnhCidew9suc4j5iO45IwEytN9tXK0U2Tl9W44-wjJRED"
+
+      - name: Send PR Notification to Discord
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+
+          PAYLOAD=$(jq -n --arg title "$PR_TITLE" \
+                              --arg author "$PR_AUTHOR" \
+                              --arg body "$PR_BODY" \
+                              --arg url "$PR_URL" \
+                              '{"content": "**New Pull Request!** 🚀\n**Title:** \($title)\n**By:** \($author)\n📜 **Description:**\n\($body)\n🔗 [View PR](\($url))"}')
+
+          curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" \
                "https://discord.com/api/webhooks/1348409326573977760/I6vRzZxUh5nK7QDI9ZcGBKLfnhCidew9suc4j5iO45IwEytN9tXK0U2Tl9W44-wjJRED"
