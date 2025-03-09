@@ -7,13 +7,22 @@ jobs:
   notify-discord:
     runs-on: ubuntu-latest
     steps:
+      - name: Fetch commit messages
+        run: |
+          # Fetch commits from GitHub API
+          RESPONSE=$(curl -H "Accept: application/vnd.github.v3+json" \
+                          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits")
+
+          # Check if the response is a valid JSON array
+          if echo "$RESPONSE" | jq empty 2>/dev/null; then
+            echo "$RESPONSE" | jq -r '[.[] | "- " + .commit.message] | join("\n")' > commits.txt
+          else
+            echo "Error fetching commits, using default message." > commits.txt
+          fi
+
       - name: Send PR notification to Discord
         run: |
-          curl -H "Accept: application/vnd.github.v3+json" \
-               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-               "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits" \
-               | jq -r '[.[] | "- " + .commit.message] | join("\n")' > commits.txt
-
           PR_BODY="${{ github.event.pull_request.body }}"
           COMMIT_MESSAGES=$(cat commits.txt)
           PR_TITLE="${{ github.event.pull_request.title }}"
