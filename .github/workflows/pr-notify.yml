@@ -7,9 +7,28 @@ jobs:
   notify-discord:
     runs-on: ubuntu-latest
     steps:
+      - name: Fetch commit messages
+        run: |
+          # Fetch commits from GitHub API
+          RESPONSE=$(curl -H "Accept: application/vnd.github.v3+json" \
+                          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits")
+
+          # Check if the response is a valid JSON array
+          if echo "$RESPONSE" | jq empty 2>/dev/null; then
+            echo "$RESPONSE" | jq -r '[.[] | "- " + .commit.message] | join("\n")' > commits.txt
+          else
+            echo "Error fetching commits, using default message." > commits.txt
+          fi
+
       - name: Send PR notification to Discord
         run: |
-          curl -H "Content-Type: application/json" -X POST \
-          -d '{"content": "**New PR Opened!** 🚀\nTitle: ${{ github.event.pull_request.title }}\nBy: ${{ github.event.pull_request.user.login }}\n🔗 [View PR](${{ github.event.pull_request.html_url }})"}' \
-          "https://discord.com/api/webhooks/1348409326573977760/I6vRzZxUh5nK7QDI9ZcGBKLfnhCidew9suc4j5iO45IwEytN9tXK0U2Tl9W44-wjJRED"
+          PR_BODY="${{ github.event.pull_request.body }}"
+          COMMIT_MESSAGES=$(cat commits.txt)
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
 
+          curl -H "Content-Type: application/json" -X POST \
+          -d "{\"content\": \"**New PR Opened!** 🚀\n**Title:** ${PR_TITLE}\n**By:** ${PR_AUTHOR}\n**🔗 PR URL:** ${PR_URL}\n\n📜 **Description:**\n${PR_BODY}\n\n🔄 **Commits:**\n${COMMIT_MESSAGES}\"}" \
+          "https://discord.com/api/webhooks/1348409326573977760/I6vRzZxUh5nK7QDI9ZcGBKLfnhCidew9suc4j5iO45IwEytN9tXK0U2Tl9W44-wjJRED"
