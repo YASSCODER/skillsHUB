@@ -1,0 +1,25 @@
+import userSchema from "../../../common/models/types/user.schema";
+
+class UserService {
+  static async getAllUsers() {
+    return await userSchema.find();
+  }
+
+  static async getUserById(id: string) {
+    return await userSchema.findById(id);
+  }
+
+  static async createUser(userData: any) {
+    return await userSchema.create(userData);
+  }
+
+  static async updateUser(id: string, userData: any) {
+    return await userSchema.findByIdAndUpdate(id, userData, { new: true });
+  }
+
+  static async deleteUser(id: string) {
+    return await userSchema.findByIdAndDelete(id);
+  }
+}
+
+export default UserService;
