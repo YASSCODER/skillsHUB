@@ -1,5 +1,5 @@
-import { IChallenge } from "../../common/models/interface/challenge.interface";
-import challengeSchema from "../../common/models/types/challenge.schema";
+import { IChallenge } from "../../../common/models/interface/challenge.interface";
+import challengeSchema from "../../../common/models/types/challenge.schema";
 
 const challenges: IChallenge[] = [];
 
@@ -16,15 +16,20 @@ export class ChallengeService {
   }
 
   async findById(id: string): Promise<IChallenge | undefined> {
-    return challenges.find(challenge => challenge.id === id);
+    return challenges.find((challenge) => challenge.id === id);
   }
 
-  async update(id: string, updatedChallenge: Partial<IChallenge>): Promise<IChallenge | null> {
-    return await challengeSchema.findByIdAndUpdate(id, updatedChallenge, { new: true });
-}
+  async update(
+    id: string,
+    updatedChallenge: Partial<IChallenge>
+  ): Promise<IChallenge | null> {
+    return await challengeSchema.findByIdAndUpdate(id, updatedChallenge, {
+      new: true,
+    });
+  }
 
   async delete(id: string): Promise<boolean> {
-    const index = challenges.findIndex(ch => ch.id === id);
+    const index = challenges.findIndex((ch) => ch.id === id);
     if (index === -1) return false;
     challenges.splice(index, 1);
     return true;

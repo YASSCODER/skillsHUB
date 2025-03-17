@@ -1,5 +1,5 @@
-import { Feed } from "../../common/models/interface/feedback.inteface";
-import feedbackSchema from "../../common/models/types/feedback.schema";
+import { Feed } from "../../../common/models/interface/feedback.inteface";
+import feedbackSchema from "../../../common/models/types/feedback.schema";
 
 export class FeedbackService {
   async create(data: Partial<Feed>) {

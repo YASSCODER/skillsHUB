@@ -19,7 +19,9 @@ export class BadgeController {
       const badges = await badgeService.findBadgesByUser(req.params.userId);
       res.status(200).json(badges);
     } catch (error) {
-      res.status(500).json({ error: "Erreur lors de la récupération des badges" });
+      res
+        .status(500)
+        .json({ error: "Erreur lors de la récupération des badges" });
     }
   }
 
@@ -28,7 +30,9 @@ export class BadgeController {
       const leaderboard = await badgeService.getLeaderboard();
       res.status(200).json(leaderboard);
     } catch (error) {
-      res.status(500).json({ error: "Erreur lors de la récupération du classement" });
+      res
+        .status(500)
+        .json({ error: "Erreur lors de la récupération du classement" });
     }
   }
 }
