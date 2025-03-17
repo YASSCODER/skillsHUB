@@ -1,0 +1,7 @@
+export enum BadgeEnum {
+    PARTICIPANT = "PARTICIPANT",
+    EXPERT = "CLIENT",
+    INTERMIDIAIRE = "INTERMIDIAIRE",
+    DEBUTANT = "DEBUTANT",
+  }
+  
