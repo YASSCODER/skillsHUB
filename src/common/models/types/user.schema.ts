@@ -22,6 +22,13 @@ const UserSchema: Schema = new Schema<IUser>({
   communities: [
     { type: mongoose.Schema.Types.ObjectId, ref: "Community", default: [] },
   ],
+  challenges: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "Challenge", default: [] },
+  ],
+  badges: [{ type: mongoose.Schema.Types.ObjectId, ref: "Badge", default: [] }],
+  feedback: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "Feedback", default: [] },
+  ],
 });
 
 UserSchema.add(BaseSchema);
