@@ -3,6 +3,7 @@ import { BaseSchema } from "../base-model.schema";
 import { IChallenge } from "../interface/challenge.interface";
 
 export const ChallengeSchema = new mongoose.Schema<IChallenge>({
+    userId: { type: String, required: true },
     title: { type: String, required: true },
     description: { type: String, required: true },
     skill: { type: String, required: true },

@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IChallenge extends Document {
+  userId: string;
   id: string;
   title: string;
   description: string;
