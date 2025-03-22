@@ -13,9 +13,15 @@ const UserSchema: Schema = new Schema<IUser>({
     required: true,
     default: RoleEnum.CLIENT,
   },
-  wallet: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet" },
-  skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Skill" }],
-  communities: [{ type: mongoose.Schema.Types.ObjectId, ref: "Community" }],
+  wallet: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Wallet",
+    default: null,
+  },
+  skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Skill", default: [] }],
+  communities: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "Community", default: [] },
+  ],
 });
 
 UserSchema.add(BaseSchema);
