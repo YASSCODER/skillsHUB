@@ -4,13 +4,20 @@ import UserModule from "./modules/user/user.module";
 import BadgeModule from "./modules/badge/badge.module";
 import ChallengeModule from "./modules/challenge/challange.module";
 import FeedbackModule from "./modules/feedback/feedback.module";
+import RoleModule from "./modules/roles/role.module";
 
 interface Module {
   path: string;
   handler: Router;
 }
 
-const modules: Module[] = [UserModule, BadgeModule , ChallengeModule , FeedbackModule];
+const modules: Module[] = [
+  UserModule,
+  BadgeModule,
+  ChallengeModule,
+  FeedbackModule,
+  RoleModule,
+];
 
 const appRegisterModules = (app: Application): void => {
   const apiPrefix = "/api";
