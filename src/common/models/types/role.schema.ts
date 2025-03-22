@@ -3,11 +3,11 @@ import { BaseSchema } from "../base-model.schema";
 import { IRole } from "../interface/role.interface";
 import { RoleEnum } from "../../enum/role.enum";
 
-export const RoleSchema: Schema = new Schema<IRole>({
+export const roleSchema: Schema = new Schema<IRole>({
   title: { type: String, required: true, enum: Object.values(RoleEnum) },
   users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });
 
-RoleSchema.add(BaseSchema);
+roleSchema.add(BaseSchema);
 
-export default mongoose.model<IRole>("Role", RoleSchema);
+export default mongoose.model<IRole>("Role", roleSchema);
