@@ -9,10 +9,15 @@ export class BadgeController {
       const { userId, challengeId, score } = req.body;
       const badge = await badgeService.awardBadge(userId, challengeId, score);
       res.status(201).json(badge);
-    } catch (error) {
-      res.status(500).json({ error: "Erreur lors de l’attribution du badge" });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(500).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Erreur inconnue lors de l’attribution du badge" });
+      }
     }
   }
+  
 
   async getUserBadges(req: Request, res: Response) {
     try {

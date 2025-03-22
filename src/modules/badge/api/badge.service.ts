@@ -1,16 +1,62 @@
+import Badge from "../../../common/models/types/badge.schema";
 import { IBadge } from "../../../common/models/interface/badge.interface";
-import badgeSchema from "../../../common/models/types/badge.schema";
+import  Challenge  from "../../../common/models/types/challenge.schema";
+import { BadgeEnum } from "../../../common/enum/badge.enum";
+//import { BadgeEnum } from "../enums/badge.enum";
 
 const badges: IBadge[] = [];
 
 export class BadgeService {
-  async awardBadge(userId: string, challengeId: string, score: number) {
-    let badgeName = "Participant";
-    if (score >= 90) badgeName = "Expert";
-    else if (score >= 70 && score < 90) badgeName = "Intermédiaire";
-    else if (score >= 50 && score < 0) badgeName = "Débutant";
+  async awardBadge(userId: string, challengeId: string, score: number): Promise<IBadge | null> {
+    try {
+      // Vérifier si le challenge existe
+      const challenge = await Challenge.findById(challengeId);
+      if (!challenge) {
+        throw new Error("Challenge non trouvé");
+      }
 
-    const badge = await badgeSchema.findOne({ userId: userId });
+      // Convertir la note sur 20 en pourcentage
+      const percentage = (score / 20) * 100;
+
+      // Calculer le score cumulé total de l'utilisateur
+      const userBadges = await Badge.find({ userId });
+      const totalPercentage = userBadges.reduce((acc, b) => acc + b.percentage, 0) + percentage;
+
+      // Déterminer le badge en fonction du total
+      let badgeType = BadgeEnum.DEBUTANT;
+      let badgeName = "Aucun badge";
+
+      if (totalPercentage >= 170) {
+        badgeType = BadgeEnum.EXPERT;
+        badgeName = "Badge d'Or";
+      } else if (totalPercentage >= 100) {
+        badgeType = BadgeEnum.INTERMIDIAIRE;
+        badgeName = "Badge d'Argent";
+      }
+
+      // Créer et sauvegarder le badge
+      const badge = new Badge({
+        userId,
+        challengeId,
+        name: badgeName,
+        type: badgeType,
+        percentage,
+        totalPercentage,
+        awardedAt: new Date(),
+      });
+
+      await badge.save();
+
+      // Vérifier si l'utilisateur atteint le certificat (1000%)
+      if (totalPercentage >= 1000) {
+        console.log(`🎉 L'utilisateur ${userId} a obtenu un certificat !`);
+      }
+
+      return badge;
+    } catch (error) {
+      console.error("Erreur dans awardBadge:", error);
+      throw new Error("Erreur lors de l’attribution du badge");
+    }
   }
 
   async findBadgesByUser(userId: string): Promise<IBadge[]> {
