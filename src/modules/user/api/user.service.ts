@@ -1,4 +1,5 @@
 import userSchema from "../../../common/models/types/user.schema";
+import { CreateUserDto } from "../dto/create-user.dto";
 
 class UserService {
   static async getAllUsers() {
@@ -9,7 +10,7 @@ class UserService {
     return await userSchema.findById(id);
   }
 
-  static async createUser(userData: any) {
+  static async createUser(userData: CreateUserDto) {
     return await userSchema.create(userData);
   }
 
