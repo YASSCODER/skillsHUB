@@ -6,6 +6,7 @@ import ChallengeModule from "./modules/challenge/challange.module";
 import FeedbackModule from "./modules/feedback/feedback.module";
 import RoleModule from "./modules/roles/role.module";
 import WalletModule from "./modules/wallet/wallet.module";
+import RewardModule from "./modules/reward/reward.module";
 
 interface Module {
   path: string;
@@ -18,7 +19,8 @@ const modules: Module[] = [
   ChallengeModule,
   FeedbackModule,
   RoleModule,
-  WalletModule
+  WalletModule,
+  RewardModule
 ];
 
 const appRegisterModules = (app: Application): void => {
