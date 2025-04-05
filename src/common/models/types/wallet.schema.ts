@@ -17,7 +17,8 @@ const WalletSchema: Schema = new Schema<IWallet>({
   isActive: {
     type: Boolean,
     default: true,
-  }
+  },
+  deactivatedAt: { type: Date, default: null }, 
 });
 
 WalletSchema.add(BaseSchema);
