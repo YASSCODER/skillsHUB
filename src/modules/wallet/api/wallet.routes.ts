@@ -7,7 +7,7 @@ const router = Router();
 router.get("/", catchAsync(WalletController.getAllWallets));
 router.get("/:id", catchAsync(WalletController.getWalletByUserId));
 router.post("/", catchAsync(WalletController.createWallet));
-router.put("/:id", catchAsync(WalletController.updateWallet));
-router.delete("/:id", catchAsync(WalletController.deleteWallet));
+router.patch("/:id/deactivate", catchAsync(WalletController.deactivateWallet));
+router.patch("/:id/activate", catchAsync(WalletController.activateWallet));
 
 export default router;
