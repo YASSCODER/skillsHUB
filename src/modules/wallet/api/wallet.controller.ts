@@ -45,17 +45,21 @@ class WalletController {
             const wallet = await WalletService.deactivateWallet(req.params.id);
             return res.status(200).json({ message: "Wallet deactivated", wallet });
         } catch (error) {
-            return res.status(404).json({ error: "Failed to deactivate wallet" });
+            return res.status(500).json({ error: "Failed to deactivate wallet" });
         }
     }
 
-    static async activateWallet(req: Request, res: Response) {
-        try {
-            const wallet = await WalletService.activateWallet(req.params.id);
-            return res.status(200).json({ message: "Wallet activated", wallet });
-        } catch (error) {
-            return res.status(404).json({ error: "Failed to activate wallet" });
+static async activateWallet(req: Request, res: Response) {
+    try {
+        const wallet = await WalletService.activateWallet(req.params.id);
+        return res.status(200).json({ message: "Wallet activated", wallet });
+    } catch (error: any) {
+        if (error.message === "You can only activate the wallet after 48 hours of deactivation") {
+        return res.status(400).json({ error: error.message });
         }
+
+        return res.status(500).json({ error: "Failed to activate wallet" });
+    }
     }
 
     static async createCheckoutSession(req: Request, res: Response) {
@@ -91,9 +95,9 @@ class WalletController {
 
             res.status(200).json({ url: session.url, sessionId: session.id });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating Stripe checkout session', error);
-            res.status(500).json({ error: 'Failed to create checkout session' });
+            res.status(500).json({ error: error.message || 'Failed to create checkout session' });
         }
     }
 

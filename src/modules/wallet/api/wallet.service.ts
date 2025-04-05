@@ -21,36 +21,49 @@ class WalletService {
   }
 
   static async deactivateWallet(walletId: string) {
-    console.log("Deactivating wallet with id:", walletId);
 
     const wallet = await walletSchema.findByIdAndUpdate(
-      walletId,
-      { isActive: false },
-      { new: true }
-    );
-
-    console.log("Wallet after deactivation:", wallet);
-
-    if (!wallet) {
-      throw new Error("Wallet not found");
-    }
-
-    return wallet;
-  }
-
-  static async activateWallet(walletId: string) {
-    const wallet = await walletSchema.findByIdAndUpdate(
-      walletId,
-      { isActive: true },
-      { new: true }
+        walletId,
+        { 
+            isActive: false,
+            deactivatedAt: new Date()
+        },
+        { new: true }
     );
 
     if (!wallet) {
-      throw new Error("Wallet not found");
+        throw new Error("Wallet not found");
     }
 
     return wallet;
+}
+
+// WalletService.ts
+static async activateWallet(walletId: string) {
+  const wallet = await walletSchema.findById(walletId);
+
+  if (!wallet) {
+      throw new Error("Wallet not found");
   }
+
+  if (wallet.deactivatedAt === null || wallet.deactivatedAt === undefined) {
+      throw new Error("Wallet was never deactivated");
+  }
+
+  const deactivatedAt = new Date(wallet.deactivatedAt);
+  const currentTime = new Date();
+  const timeDifference = currentTime.getTime() - deactivatedAt.getTime();
+  const hoursDifference = timeDifference / (1000 * 3600);
+
+  if (hoursDifference < 48) {
+      throw new Error("You can only activate the wallet after 48 hours of deactivation");
+  }
+
+  wallet.isActive = true;
+  await wallet.save();
+
+  return wallet;
+}
 
 static async topUpImoney(userId: string, imoneyValue: number) {
 
