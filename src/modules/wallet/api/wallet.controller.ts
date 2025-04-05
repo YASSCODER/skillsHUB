@@ -33,25 +33,24 @@ try {
 }
 }
 
-static async updateWallet(req: Request, res: Response) {
+static async deactivateWallet(req: Request, res: Response) {
 try {
-    const updatedWallet = await WalletService.updateWallet(req.params.userId, req.body);
-    if (!updatedWallet) return res.status(404).json({ error: "Wallet not found" });
-    res.json(updatedWallet);
+    const wallet = await WalletService.deactivateWallet(req.params.id);
+    return res.status(200).json({ message: "Wallet deactivated", wallet });
 } catch (error) {
-    res.status(500).json({ error: "Failed to update wallet" });
+    return res.status(404).json({ error: "Failed to deactivate wallet" });
 }
 }
 
-static async deleteWallet(req: Request, res: Response) {
+static async activateWallet(req: Request, res: Response) {
 try {
-    const deletedWallet = await WalletService.deleteWallet(req.params.userId);
-    if (!deletedWallet) return res.status(404).json({ error: "Wallet not found" });
-    res.json({ message: "Wallet deleted successfully" });
+    const wallet = await WalletService.activateWallet(req.params.id);
+    return res.status(200).json({ message: "Wallet activated", wallet });
 } catch (error) {
-    res.status(500).json({ error: "Failed to delete wallet" });
+    return res.status(404).json({ error: "Failed to activate wallet" });
 }
 }
+
 }
 
 export default WalletController;
