@@ -52,6 +52,20 @@ class WalletService {
     return wallet;
   }
 
+static async topUpImoney(userId: string, imoneyValue: number) {
+
+  const wallet = await walletSchema.findOneAndUpdate(
+    { user: userId },
+    { $inc: { "imoney.value": imoneyValue } },
+    { new: true }
+  ).populate("imoney");
+
+  if (!wallet || !wallet.imoney) {
+    throw new Error("Wallet or Imoney not found for the user");
+  }
+
+  return wallet;
+}
 }
 
 export default WalletService;
