@@ -20,7 +20,7 @@ class WalletController {
 
     static async getWalletByUserId(req: Request, res: Response) {
         try {
-            const wallet = await WalletService.getWalletByUserId(req.params.userId);
+            const wallet = await WalletService.getWalletById(req.params.id);
             if (!wallet) return res.status(404).json({ error: "Wallet not found" });
             res.json(wallet);
         } catch (error) {
