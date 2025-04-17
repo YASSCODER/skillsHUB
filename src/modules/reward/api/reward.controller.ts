@@ -6,26 +6,37 @@ class RewardsController {
     try {
       const rewards = await RewardsService.getUserRewards(req.params.userId);
       res.json(rewards);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch rewards" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch rewards" });
+    }
+  }
+
+  static async getUserHistory(req: Request, res: Response) {
+    try {
+      const history = await RewardsService.getUserHistory(req.params.userId);
+      res.json(history);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch history" });
     }
   }
 
   static async earnPoints(req: Request, res: Response) {
     try {
-      const updatedRewards = await RewardsService.earnPoints(req.params.userId, req.body.points);
-      res.json(updatedRewards);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update rewards" });
+      const { points, walletId, source } = req.body;
+      const result = await RewardsService.earnPoints(req.params.userId, points, walletId, source);
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update rewards" });
     }
   }
 
   static async redeemPoints(req: Request, res: Response) {
     try {
-      const result = await RewardsService.redeemPoints(req.params.userId, req.body.points);
+      const { points, walletId, source } = req.body;
+      const result = await RewardsService.redeemPoints(req.params.userId, points, walletId, source);
       res.json(result);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to redeem points" });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to redeem points" });
     }
   }
 }
