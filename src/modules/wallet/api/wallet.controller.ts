@@ -61,77 +61,111 @@ static async activateWallet(req: Request, res: Response) {
         return res.status(500).json({ error: "Failed to activate wallet" });
     }
     }
-
     static async createCheckoutSession(req: Request, res: Response) {
         const { userId, amount, imoneyValue } = req.body;
-
+    
+        console.log('createCheckoutSession - Request body:', { userId, amount, imoneyValue });
+    
         if (!userId || !amount || !imoneyValue) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        console.log('createCheckoutSession - Missing required fields:', { userId, amount, imoneyValue });
+        return res.status(400).json({ error: 'Missing required fields' });
         }
-
+    
         try {
-            const session = await stripe.checkout.sessions.create({
-                payment_method_types: ['card'],
-                line_items: [
-                    {
-                        price_data: {
-                            currency: 'usd',
-                            product_data: {
-                                name: `Top-Up: ${imoneyValue} iMoney`,
-                            },
-                            unit_amount: amount * 100,
-                        },
-                        quantity: 1,
-                    },
-                ],
-                mode: 'payment',
-                success_url: `${process.env.CORS_ORIGIN}/wallet/top-up/success?session_id={CHECKOUT_SESSION_ID}`,
-                cancel_url: `${process.env.CORS_ORIGIN}/wallet/top-up/cancel`,
-                metadata: {
-                    userId,
-                    imoneyValue: imoneyValue.toString(),
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+            {
+                price_data: {
+                currency: 'usd',
+                product_data: {
+                    name: `Top-Up: ${imoneyValue} iMoney`,
                 },
-            });
-
-            res.status(200).json({ url: session.url, sessionId: session.id });
-
+                unit_amount: amount * 100,
+                },
+                quantity: 1,
+            },
+            ],
+            mode: 'payment',
+            success_url: `${process.env.CORS_ORIGIN}/wallet/top-up/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.CORS_ORIGIN}/wallet/top-up/cancel`,
+            metadata: {
+            userId,
+            imoneyValue: imoneyValue.toString(),
+            },
+        });
+    
+        console.log('createCheckoutSession - Stripe session created:', {
+            sessionId: session.id,
+            url: session.url,
+            metadata: session.metadata,
+        });
+    
+        res.status(200).json({ url: session.url, sessionId: session.id });
         } catch (error: any) {
-            console.error('Error creating Stripe checkout session', error);
-            res.status(500).json({ error: error.message || 'Failed to create checkout session' });
+        console.error('createCheckoutSession - Error creating Stripe checkout session:', {
+            error: error.message,
+            stack: error.stack,
+        });
+        res.status(500).json({ error: error.message || 'Failed to create checkout session' });
         }
     }
-
+    
     static async handleCheckoutSuccess(req: Request, res: Response) {
         const { session_id } = req.query;
-
+    
+        console.log('handleCheckoutSuccess - Session ID from query:', session_id);
+    
         if (!session_id) {
-            return res.status(400).json({ error: "Missing session ID" });
+        console.log('handleCheckoutSuccess - Missing session ID');
+        return res.status(400).json({ error: 'Missing session ID' });
         }
-
+    
         try {
-            const session = await stripe.checkout.sessions.retrieve(session_id as string);
-
-            if (session.payment_status === 'paid') {
-                const userId = session.metadata?.userId;
-                const imoneyValue = parseInt(session.metadata?.imoneyValue || "0");
-
-                if (userId && imoneyValue) {
-                    await WalletService.topUpImoney(userId, imoneyValue);
-                    res.status(200).json({ message: "iMoney topped up successfully" });
-                    return;
-                } else {
-                    res.status(400).json({ error: "User or amount not found in session metadata" });
-                    return;
-                }
+        const session = await stripe.checkout.sessions.retrieve(session_id as string);
+    
+        console.log('handleCheckoutSuccess - Retrieved Stripe session:', {
+            sessionId: session.id,
+            payment_status: session.payment_status,
+            metadata: session.metadata,
+        });
+    
+        if (session.payment_status === 'paid') {
+            const userId = session.metadata?.userId;
+            const imoneyValue = parseInt(session.metadata?.imoneyValue || '0');
+    
+            console.log('handleCheckoutSuccess - Payment successful, processing top-up:', {
+            userId,
+            imoneyValue,
+            });
+    
+            if (userId && imoneyValue) {
+            await WalletService.topUpImoney(userId, imoneyValue);
+            console.log('handleCheckoutSuccess - iMoney topped up successfully for user:', userId);
+            res.status(200).json({ message: 'iMoney topped up successfully' });
+            return;
             } else {
-                res.status(400).json({ error: "Payment not successful" });
-                return;
+            console.log('handleCheckoutSuccess - Missing userId or imoneyValue in metadata:', {
+                userId,
+                imoneyValue,
+            });
+            res.status(400).json({ error: 'User or amount not found in session metadata' });
+            return;
             }
-        } catch (error) {
-            console.error("Error retrieving session", error);
-            res.status(500).json({ error: "Failed to retrieve session" });
+        } else {
+            console.log('handleCheckoutSuccess - Payment not successful:', {
+            payment_status: session.payment_status,
+            });
+            res.status(400).json({ error: 'Payment not successful' });
+            return;
         }
-
+        } catch (error: any) {
+        console.error('handleCheckoutSuccess - Error retrieving session:', {
+            error: error.message,
+            stack: error.stack,
+        });
+        res.status(500).json({ error: 'Failed to retrieve session' });
+        }
     }
 
 }
