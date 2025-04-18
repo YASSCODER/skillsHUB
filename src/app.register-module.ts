@@ -1,4 +1,3 @@
-import { Auth } from "./../node_modules/mongodb/src/mongo_client";
 import { Application, Router, Request, Response } from "express";
 import logger from "./common/utils/logger";
 import UserModule from "./modules/user/user.module";
@@ -7,6 +6,8 @@ import ChallengeModule from "./modules/challenge/challange.module";
 import FeedbackModule from "./modules/feedback/feedback.module";
 import RoleModule from "./modules/roles/role.module";
 import AuthModule from "./modules/auth/auth.modules";
+import WalletModule from "./modules/wallet/wallet.module";
+import RewardModule from "./modules/reward/reward.module";
 
 interface Module {
   path: string;
@@ -20,6 +21,8 @@ const modules: Module[] = [
   FeedbackModule,
   RoleModule,
   AuthModule,
+  WalletModule,
+  RewardModule,
 ];
 
 const appRegisterModules = (app: Application): void => {
