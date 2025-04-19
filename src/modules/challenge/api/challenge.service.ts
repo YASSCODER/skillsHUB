@@ -1,37 +1,62 @@
+import axios from "axios";
 import { IChallenge } from "../../../common/models/interface/challenge.interface";
-import challengeSchema from "../../../common/models/types/challenge.schema";
-
-const challenges: IChallenge[] = [];
+import ChallengeModel from "../../../common/models/types/challenge.schema";
+import challenge from "../../../common/models/types/challenge.schema";
 
 export class ChallengeService {
-  async create(challenge: IChallenge): Promise<IChallenge> {
-    challenge.id = Date.now().toString();
-    challenge.createdAt = new Date();
-    challenges.push(challenge);
-    return challenge;
+  async create(challengeData: Partial<IChallenge>): Promise<IChallenge> {
+    const challenge = new ChallengeModel(challengeData);
+    return await challenge.save();
   }
 
   async findAll(): Promise<IChallenge[]> {
-    return challenges;
+    return await ChallengeModel.find();
   }
 
-  async findById(id: string): Promise<IChallenge | undefined> {
-    return challenges.find((challenge) => challenge.id === id);
+  async findById(id: string): Promise<IChallenge | null> {
+    return await ChallengeModel.findById(id);
   }
 
   async update(
     id: string,
     updatedChallenge: Partial<IChallenge>
   ): Promise<IChallenge | null> {
-    return await challengeSchema.findByIdAndUpdate(id, updatedChallenge, {
+    return await ChallengeModel.findByIdAndUpdate(id, updatedChallenge, {
       new: true,
     });
   }
 
   async delete(id: string): Promise<boolean> {
-    const index = challenges.findIndex((ch) => ch.id === id);
-    if (index === -1) return false;
-    challenges.splice(index, 1);
-    return true;
+    const result = await ChallengeModel.findByIdAndDelete(id);
+    return result !== null;
   }
+
+  // Lister les challenges disponibles à venir (basé sur une date de début)
+  async getUpcomingChallenges() {
+    return await ChallengeModel.find({ startDate: { $gte: new Date() } }).sort({ startDate: 1 });
+  }
+
+  //Valider automatiquement un challenge réussi
+  async validateChallengeCompletion(userId: string, challengeId: string, score: number) {
+    const challenge = await ChallengeModel.findById(challengeId);
+    if (!challenge) throw new Error("Challenge introuvable");
+  
+    const status = score >= 12 ? "réussi" : "échoué";
+  
+    // Tu peux enregistrer l'état dans un autre modèle ou journal
+    return { challengeId, userId, score, status };
+  }
+
+   // 🔥 Nouvelle méthode pour appeler Open Trivia DB
+   async fetchTriviaQuestions(
+    amount = 5,
+    category = 18,
+    difficulty = "medium",
+    type = "multiple"
+  ) {
+    const url = `https://opentdb.com/api.php?amount=${amount}&category=${category}&difficulty=${difficulty}&type=${type}`;
+    const response = await axios.get(url);
+    return response.data.results;
+  }
+  
 }
