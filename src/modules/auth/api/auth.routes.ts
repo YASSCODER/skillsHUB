@@ -10,5 +10,6 @@ const authController = new AuthController(new AuthService(new UserService()));
 
 router.post("/register", catchAsync(authController.register));
 router.post("/login", catchAsync(authController.login));
+router.post("/forgot-password", catchAsync(authController.forgetPassword));
 
 export default router;
