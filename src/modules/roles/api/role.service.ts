@@ -19,4 +19,8 @@ export class RoleService {
   static async deleteRole(id: string) {
     return await roleSchema.findByIdAndDelete(id);
   }
+
+  static async getRoleByName(title: string) {
+    return await roleSchema.findOne({ title });
+  }
 }

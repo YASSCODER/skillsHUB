@@ -11,4 +11,6 @@ export interface IUser extends Document {
   challenges: mongoose.Types.ObjectId[];
   badges: mongoose.Types.ObjectId[];
   feedback: mongoose.Types.ObjectId[];
+  resetToken: string;
+  resetTokenExpiresAt: number;
 }
