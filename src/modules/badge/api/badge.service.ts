@@ -6,7 +6,16 @@ import { BadgeEnum } from "../../../common/enum/badge.enum";
 
 const badges: IBadge[] = [];
 
+function getBadgeImageUrl(badgeType: string): string {
+  const baseUrl = "https://ui-avatars.com/api/";
+  const label = encodeURIComponent(badgeType);
+  return `${baseUrl}?name=${label}&background=random&color=fff&bold=true&format=png`;
+}
+
 export class BadgeService {
+
+  
+  
   async awardBadge(userId: string, challengeId: string, score: number): Promise<IBadge | null> {
     try {
       // Vérifier si le challenge existe
@@ -20,6 +29,7 @@ export class BadgeService {
 
       // Calculer le score cumulé total de l'utilisateur
       const userBadges = await Badge.find({ userId });
+      console.log("🎯 Badges récupérés depuis MongoDB:", userBadges);
       const totalPercentage = userBadges.reduce((acc, b) => acc + b.percentage, 0) + percentage;
 
       // Déterminer le badge en fonction du total
@@ -43,6 +53,7 @@ export class BadgeService {
         percentage,
         totalPercentage,
         awardedAt: new Date(),
+        imageUrl: getBadgeImageUrl(badgeType),
       });
 
       await badge.save();
@@ -60,34 +71,62 @@ export class BadgeService {
   }
 
   async findBadgesByUser(userId: string): Promise<IBadge[]> {
-    return badges.filter((badge) => badge.userId === userId);
-  }
-
-  async getLeaderboard(): Promise<
-    { userId: string; score: number; badgeCount: number }[]
-  > {
-    const userScores: {
-      [userId: string]: { score: number; badgeCount: number };
-    } = {};
-
-    const badgePoints: { [key: string]: number } = {
-      Expert: 10,
-      Intermédiaire: 5,
-      Débutant: 2,
-      Participant: 1,
-    };
-
-    for (const badge of badges) {
-      if (!userScores[badge.userId]) {
-        userScores[badge.userId] = { score: 0, badgeCount: 0 };
-      }
-
-      userScores[badge.userId].score += badgePoints[badge.name] || 0;
-      userScores[badge.userId].badgeCount++;
+    return await Badge.find({ userId });
     }
 
-    return Object.entries(userScores)
-      .map(([userId, data]) => ({ userId, ...data }))
-      .sort((a, b) => b.score - a.score || b.badgeCount - a.badgeCount);
+    async getLeaderboard(): Promise<
+  { userId: string; score: number; badgeCount: number }[]
+> {
+  const userScores: {
+    [userId: string]: { score: number; badgeCount: number };
+  } = {};
+
+  const badgePoints: { [key: string]: number } = {
+    "Badge d'Or": 10,
+    "Badge d'Argent": 5,
+    "Badge de Bronze": 2,
+    "Badge de Participation": 1,
+  };
+
+  // 🔥 On récupère tous les badges de Mongo
+  const allBadges = await Badge.find();
+
+  for (const badge of allBadges) {
+    const uid = badge.userId?.toString();
+    if (!uid) continue;
+
+    if (!userScores[uid]) {
+      userScores[uid] = { score: 0, badgeCount: 0 };
+    }
+
+    userScores[uid].score += badgePoints[badge.name] || 0;
+    userScores[uid].badgeCount++;
   }
+
+  return Object.entries(userScores)
+    .map(([userId, data]) => ({ userId, ...data }))
+    .sort((a, b) => b.score - a.score || b.badgeCount - a.badgeCount);
+}
+
+async updateBadge(id: string, updateData: Partial<IBadge>): Promise<IBadge | null> {
+  const updatedBadge = await Badge.findByIdAndUpdate(id, updateData, {
+    new: true, // pour retourner le document mis à jour
+    runValidators: true, // applique les validateurs du schema
+  });
+
+  return updatedBadge;
+}  
+
+async findAll(): Promise<IBadge[]> {
+  return await Badge.find();
+}
+
+async delete(id: string): Promise<boolean> {
+  const result = await Badge.findByIdAndDelete(id);
+  return result !== null;
+}
+
+
+
+
 }
