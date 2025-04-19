@@ -5,7 +5,7 @@ import express from "express";
 import dotenv from "dotenv";
 import appRegisterModules from "./app.register-module";
 
-dotenv.config();
+
 
 const app: Application = express();
 
@@ -27,5 +27,7 @@ app.use((err: any, req: any, res: any, next: any) => {
   logger.error(`Error: ${err.message}`);
   res.status(500).json({ error: "Internal Server Error" });
 });
+
+dotenv.config();
 
 export default app;

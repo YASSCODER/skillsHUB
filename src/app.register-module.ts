@@ -1,13 +1,22 @@
-import { Application, Router, Request, Response } from "express";
+import { Application, Router } from "express";
 import logger from "./common/utils/logger";
 import UserModule from "./modules/user/user.module";
+import CommunityModule from "./modules/community/community.module";
+import CommentModule from "./modules/comment/comment.module";
+import ForumModel from "./modules/Forum/forum.module";
 
 interface Module {
   path: string;
   handler: Router;
 }
 
-const modules: Module[] = [UserModule];
+const modules: Module[] = [
+  UserModule,
+  ForumModel,
+  CommunityModule,
+  CommentModule,
+
+];
 
 const appRegisterModules = (app: Application): void => {
   const apiPrefix = "/api";
