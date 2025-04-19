@@ -29,6 +29,8 @@ const UserSchema: Schema = new Schema<IUser>({
   feedback: [
     { type: mongoose.Schema.Types.ObjectId, ref: "Feedback", default: [] },
   ],
+  resetToken: { type: String, default: null },
+  resetTokenExpiresAt: { type: Number, default: null },
 });
 
 UserSchema.add(BaseSchema);

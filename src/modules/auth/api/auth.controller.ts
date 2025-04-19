@@ -29,5 +29,17 @@ export class AuthController {
       res.status(400).json({ message: errorMessage });
     }
   };
+
+  forgetPassword = async (req: Request, res: Response) => {
+    try {
+      const data = await this.authService.forgotPassword(req, res);
+      res.json({ message: "Password reset link sent", data });
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An unknown error occurred";
+      res.status(400).json({ message: errorMessage });
+    }
+  };
 }
+
 export default new AuthController(new AuthService(new UserService()));
