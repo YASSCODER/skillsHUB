@@ -1,60 +1,62 @@
+import axios from "axios";
 import { IChallenge } from "../../../common/models/interface/challenge.interface";
-import challengeSchema from "../../../common/models/types/challenge.schema";
+import ChallengeModel from "../../../common/models/types/challenge.schema";
+import challenge from "../../../common/models/types/challenge.schema";
 
 export class ChallengeService {
-  // ✅ Créer un challenge en base de données
-  async create(payload: IChallenge) {
-    try {
-      return await challengeSchema.create(payload);
-    } catch (error) {
-      console.error("Erreur lors de la création du challenge :", error);
-      throw new Error("Impossible de créer le challenge.");
-    }
+  async create(challengeData: Partial<IChallenge>): Promise<IChallenge> {
+    const challenge = new ChallengeModel(challengeData);
+    return await challenge.save();
   }
 
-  // ✅ Récupérer tous les challenges depuis MongoDB
   async findAll(): Promise<IChallenge[]> {
-    try {
-      return await challengeSchema.find();
-    } catch (error) {
-      console.error("Erreur lors de la récupération des challenges :", error);
-      throw new Error("Impossible de récupérer les challenges.");
-    }
+    return await ChallengeModel.find();
   }
 
-  // ✅ Trouver un challenge par ID
   async findById(id: string): Promise<IChallenge | null> {
-    try {
-      return await challengeSchema.findById(id);
-    } catch (error) {
-      console.error("Erreur lors de la récupération du challenge :", error);
-      throw new Error("Impossible de récupérer le challenge.");
-    }
+    return await ChallengeModel.findById(id);
   }
 
-  // ✅ Mettre à jour un challenge
   async update(
     id: string,
     updatedChallenge: Partial<IChallenge>
   ): Promise<IChallenge | null> {
-    try {
-      return await challengeSchema.findByIdAndUpdate(id, updatedChallenge, {
-        new: true,
-      });
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour du challenge :", error);
-      throw new Error("Impossible de mettre à jour le challenge.");
-    }
+    return await ChallengeModel.findByIdAndUpdate(id, updatedChallenge, {
+      new: true,
+    });
   }
 
-  // ✅ Supprimer un challenge
   async delete(id: string): Promise<boolean> {
-    try {
-      const deletedChallenge = await challengeSchema.findByIdAndDelete(id);
-      return !!deletedChallenge;
-    } catch (error) {
-      console.error("Erreur lors de la suppression du challenge :", error);
-      throw new Error("Impossible de supprimer le challenge.");
-    }
+    const result = await ChallengeModel.findByIdAndDelete(id);
+    return result !== null;
   }
+
+  // Lister les challenges disponibles à venir (basé sur une date de début)
+  async getUpcomingChallenges() {
+    return await ChallengeModel.find({ startDate: { $gte: new Date() } }).sort({ startDate: 1 });
+  }
+
+  //Valider automatiquement un challenge réussi
+  async validateChallengeCompletion(userId: string, challengeId: string, score: number) {
+    const challenge = await ChallengeModel.findById(challengeId);
+    if (!challenge) throw new Error("Challenge introuvable");
+  
+    const status = score >= 12 ? "réussi" : "échoué";
+  
+    // Tu peux enregistrer l'état dans un autre modèle ou journal
+    return { challengeId, userId, score, status };
+  }
+
+   // 🔥 Nouvelle méthode pour appeler Open Trivia DB
+   async fetchTriviaQuestions(
+    amount = 5,
+    category = 18,
+    difficulty = "medium",
+    type = "multiple"
+  ) {
+    const url = `https://opentdb.com/api.php?amount=${amount}&category=${category}&difficulty=${difficulty}&type=${type}`;
+    const response = await axios.get(url);
+    return response.data.results;
+  }
+  
 }

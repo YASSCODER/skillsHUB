@@ -57,4 +57,24 @@ export class FeedbackController {
       res.status(500).json({ message: "Erreur lors de la suppression du feedback", error });
     }
   }
+
+  async getAverageRating(req: Request, res: Response) {
+    try {
+      const average = await feedbackService.getAverageRatingForUser(req.params.userId);
+      res.status(200).json({ userId: req.params.userId, averageRating: average });
+    } catch (error) {
+      res.status(500).json({ message: "Erreur lors du calcul de la note moyenne", error });
+    }
+  }
+  
+  
+  async getTopRatedUsers(req: Request, res: Response) {
+    try {
+      const limit = parseInt(req.query.limit as string) || 5;
+      const topUsers = await feedbackService.getTopRatedUsers(limit);
+      res.status(200).json(topUsers);
+    } catch (error) {
+      res.status(500).json({ message: "Erreur lors de la récupération des meilleurs utilisateurs", error });
+    }
+  }
 }
