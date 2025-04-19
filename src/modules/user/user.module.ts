@@ -6,4 +6,4 @@ const UserModule: { path: string; handler: Router } = {
   handler: userRoutes,
 };
 
-export default UserModule;
+export default UserModule;  

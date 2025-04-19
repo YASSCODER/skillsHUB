@@ -8,6 +8,9 @@ import RoleModule from "./modules/roles/role.module";
 import AuthModule from "./modules/auth/auth.modules";
 import WalletModule from "./modules/wallet/wallet.module";
 import RewardModule from "./modules/reward/reward.module";
+import SalonModule from  "./modules/salon/salon.module"; 
+import SessionModule from  "./modules/session/session.module"; 
+
 
 interface Module {
   path: string;
@@ -23,6 +26,8 @@ const modules: Module[] = [
   AuthModule,
   WalletModule,
   RewardModule,
+  SalonModule,
+  SessionModule
 ];
 
 const appRegisterModules = (app: Application): void => {
