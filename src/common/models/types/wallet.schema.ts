@@ -14,6 +14,11 @@ const WalletSchema: Schema = new Schema<IWallet>({
     ref: "Imoney",
     required: true,
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+  deactivatedAt: { type: Date, default: null }, 
 });
 
 WalletSchema.add(BaseSchema);

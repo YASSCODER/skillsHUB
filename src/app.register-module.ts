@@ -4,6 +4,13 @@ import UserModule from "./modules/user/user.module";
 import CommunityModule from "./modules/community/community.module";
 import CommentModule from "./modules/comment/comment.module";
 import ForumModel from "./modules/Forum/forum.module";
+import BadgeModule from "./modules/badge/badge.module";
+import ChallengeModule from "./modules/challenge/challange.module";
+import FeedbackModule from "./modules/feedback/feedback.module";
+import RoleModule from "./modules/roles/role.module";
+import AuthModule from "./modules/auth/auth.modules";
+import WalletModule from "./modules/wallet/wallet.module";
+import RewardModule from "./modules/reward/reward.module";
 
 interface Module {
   path: string;
@@ -16,6 +23,13 @@ const modules: Module[] = [
   CommunityModule,
   CommentModule,
 
+  BadgeModule,
+  ChallengeModule,
+  FeedbackModule,
+  RoleModule,
+  AuthModule,
+  WalletModule,
+  RewardModule,
 ];
 
 const appRegisterModules = (app: Application): void => {

@@ -1,5 +1,4 @@
 import mongoose, { Document } from "mongoose";
-import { RoleEnum } from "../../enum/role.enum";
 
 export interface IUser extends Document {
   fullName: string;
@@ -9,4 +8,9 @@ export interface IUser extends Document {
   wallet: mongoose.Types.ObjectId;
   skills: mongoose.Types.ObjectId[];
   communities: mongoose.Types.ObjectId[];
+  challenges: mongoose.Types.ObjectId[];
+  badges: mongoose.Types.ObjectId[];
+  feedback: mongoose.Types.ObjectId[];
+  resetToken: string;
+  resetTokenExpiresAt: number;
 }
