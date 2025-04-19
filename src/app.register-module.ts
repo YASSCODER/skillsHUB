@@ -1,13 +1,20 @@
 import { Application, Router, Request, Response } from "express";
 import logger from "./common/utils/logger";
 import UserModule from "./modules/user/user.module";
+import SalonModule from  "./modules/salon/salon.module"; 
+import SessionModule from  "./modules/session/session.module"; 
+
 
 interface Module {
   path: string;
   handler: Router;
 }
 
-const modules: Module[] = [UserModule];
+const modules: Module[] = [
+  UserModule,
+  SalonModule,
+  SessionModule
+];
 
 const appRegisterModules = (app: Application): void => {
   const apiPrefix = "/api";
