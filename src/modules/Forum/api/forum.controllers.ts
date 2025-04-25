@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import ForumService from './forum.services';
 
@@ -58,35 +59,28 @@ class ForumController {
       res.status(500).json({ error: 'Failed to delete forum' });
     }
   }
-  async isUserParticipant(req: Request, res: Response): Promise<void> {
+  
+  async rateForum(req: Request, res: Response): Promise<void> {
     try {
       const { forumId, userId } = req.params;
-      const isParticipant = await ForumService.isUserParticipant(forumId, userId);
-      res.json({ isParticipant });
+      const { score } = req.body;
+      const forum = await ForumService.rateForum(forumId, userId, score);
+      res.json(forum);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to check participant status' });
+      res.status(500).json({ error: 'Failed to rate forum' });
     }
   }
-
-  async addParticipantToForum(req: Request, res: Response): Promise<void> {
+  
+  async getForumsByUser(req: Request, res: Response): Promise<void> {
     try {
-      const { forumId, userId } = req.params;
-      const updatedForum = await ForumService.addParticipantToForum(forumId, userId);
-      res.json(updatedForum);
+      const { userId } = req.params;
+      const forums = await ForumService.getForumsByUser(userId);
+      res.json(forums);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to add participant' });
+      res.status(500).json({ error: 'Failed to fetch forums by user' });
     }
   }
-
-  async removeParticipantFromForum(req: Request, res: Response): Promise<void> {
-    try {
-      const { forumId, userId } = req.params;
-      const updatedForum = await ForumService.removeParticipantFromForum(forumId, userId);
-      res.json(updatedForum);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to remove participant' });
-    }
-  }
+  
 }
 
 

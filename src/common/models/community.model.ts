@@ -2,7 +2,8 @@ import mongoose, { Schema, Document } from "mongoose";
 import { ICommunity } from "./interface/community.interface";
 import { BaseSchema } from "./base-model.schema"; // ajuste le chemin si besoin
 
-const CommunitySchema = new Schema<ICommunity>({
+const CommunitySchema = new Schema<ICommunity>(
+  {
     name: { type: String, required: true },
     creator: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     members: [
@@ -14,9 +15,14 @@ const CommunitySchema = new Schema<ICommunity>({
     events: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Event" },
     ],
-  }, {
+  },
+  {
     timestamps: true,  // Pour avoir les champs createdAt et updatedAt
-  });
+  }
+);
 
 // Évite OverwriteModelError
-export const CommunityModel = mongoose.models.Community || mongoose.model<ICommunity>("Community", CommunitySchema);
+const CommunityModel = mongoose.models.Community || mongoose.model<ICommunity>("Community", CommunitySchema);
+
+export { CommunityModel };
+ mongoose.models.Community || mongoose.model<ICommunity>("Community", CommunitySchema);

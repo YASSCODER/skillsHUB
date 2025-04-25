@@ -16,6 +16,12 @@ const ForumSchema: Schema = new Schema<IForum>({
     ref: "Community",
     required: true,
   },
+  ratings: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      score: { type: Number, min: 1, max: 5 },
+    },
+  ],
 });
 
 ForumSchema.add(BaseSchema);

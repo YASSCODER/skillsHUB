@@ -1,3 +1,4 @@
+
 import communitySchema from "../../../common/models/types/community.schema";
 
 class CommunityService {
