@@ -1,5 +1,5 @@
+import mongoose from "mongoose";
 import forumSchema from "../../../common/models/types/forum.schema";
-
 
 class ForumService {
   async getAllForums() {
@@ -15,53 +15,68 @@ class ForumService {
     return await forum.save();
   }
 
-  async updateForum(id: string, forumData: any){
+  async updateForum(id: string, forumData: any) {
     return await forumSchema.findByIdAndUpdate(id, forumData, { new: true });
   }
 
   async deleteForum(id: string) {
-    return  await forumSchema.findByIdAndDelete(id);
+    return await forumSchema.findByIdAndDelete(id);
   }
-  
-  // Vérifier si un utilisateur est déjà membre du forum
+
   async isUserParticipant(forumId: string, userId: string) {
     const forum = await forumSchema.findById(forumId);
-    if (!forum) {
-      throw new Error('Forum not found');
-    }
-    // Vérifie si l'ID de l'utilisateur est présent dans les commentaires (ou la liste des participants)
-    return forum.comments.includes(userId);
+    if (!forum) throw new Error("Forum not found");
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    return forum.comments.some((commentId) => commentId.equals(userObjectId));
   }
 
-  // Ajouter un utilisateur en tant que participant au forum
   async addParticipantToForum(forumId: string, userId: string) {
     const forum = await forumSchema.findById(forumId);
-    if (!forum) {
-      throw new Error('Forum not found');
-    }
+    if (!forum) throw new Error("Forum not found");
 
-    // Vérifie si l'utilisateur est déjà un participant, sinon on l'ajoute
-    if (!forum.comments.includes(userId)) {
-      forum.comments.push(userId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const isAlreadyParticipant = forum.comments.some((id) => id.equals(userObjectId));
+
+    if (!isAlreadyParticipant) {
+      forum.comments.push(userObjectId);
       await forum.save();
     }
     return forum;
   }
 
-  // Retirer un utilisateur du forum
   async removeParticipantFromForum(forumId: string, userId: string) {
     const forum = await forumSchema.findById(forumId);
-    if (!forum) {
-      throw new Error('Forum not found');
-    }
+    if (!forum) throw new Error("Forum not found");
 
-    // Retirer l'utilisateur des commentaires (ou participants)
-    forum.comments = forum.comments.filter((comment: mongoose.Types.ObjectId) => !comment.equals(userId));
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    forum.comments = forum.comments.filter((id) => !id.equals(userObjectId));
+
     await forum.save();
     return forum;
   }
+
+  async rateForum(forumId: string, userId: string, score: number) {
+    const forum = await forumSchema.findById(forumId);
+    if (!forum) throw new Error("Forum not found");
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const existingRating = forum.ratings.find((r) => r.user.equals(userObjectId));
+
+    if (existingRating) {
+      existingRating.score = score; // update
+    } else {
+      forum.ratings.push({ user: userObjectId, score }); // new rating
+    }
+
+    await forum.save();
+    return forum;
+  }
+
+  async getForumsByUser(userId: string) {
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    return await forumSchema.find({ author: userObjectId });
+  }
 }
-
-
 
 export default new ForumService();

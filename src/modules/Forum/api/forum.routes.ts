@@ -9,9 +9,7 @@ router.get('/:id',catchAsync( ForumController.getForumById));
 router.post('/', catchAsync(ForumController.createForum));
 router.put('/:id', catchAsync(ForumController.updateForum));
 router.delete('/:id',catchAsync( ForumController.deleteForum));
-router.get("/:forumId/isUserParticipant/:userId", catchAsync(ForumController.isUserParticipant));
-router.post("/:forumId/addParticipant/:userId", catchAsync(ForumController.addParticipantToForum));
-router.delete("/:forumId/removeParticipant/:userId", catchAsync(ForumController.removeParticipantFromForum));
-
+router.post("/:forumId/rate/:userId", catchAsync(ForumController.rateForum));
+router.get("/byUser/:userId", catchAsync(ForumController.getForumsByUser));
 
 export default router;

@@ -43,6 +43,4 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 app.use('/api/sessions', sessionsRoutes);
 
-dotenv.config();
-
 export default app;

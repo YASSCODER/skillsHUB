@@ -64,7 +64,7 @@ class CommunityController {
     try {
       const { id } = req.params;
       const { name, description } = req.body;
-      const updatedCommunity = await CommunityService.updateCommunity(id.trim(), name, description);
+      const updatedCommunity = await CommunityService.updateCommunity(id.trim(), name);
 
       if (!updatedCommunity) {
         return res.status(404).json({ error: "Community not found" });
