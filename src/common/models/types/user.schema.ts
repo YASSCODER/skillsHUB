@@ -8,31 +8,49 @@ const UserSchema: Schema = new Schema<IUser>({
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
   role: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Role",
-    required: true,
-    default: RoleEnum.CLIENT,
-  },
+    type: mongoose.Schema.Types.ObjectId, ref: "Role", required: true, default: RoleEnum.CLIENT,},
   wallet: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Wallet",
-    default: null,
-  },
+    type: mongoose.Schema.Types.ObjectId, ref: "Wallet",default: null,},
   skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Skill", default: [] }],
   communities: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "Community", default: [] },
-  ],
-  challenges: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "Challenge", default: [] },
-  ],
+    { type: mongoose.Schema.Types.ObjectId, ref: "Community", default: [] },],
+  
+    challenges: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "Challenge", default: [] }, ],
   badges: [{ type: mongoose.Schema.Types.ObjectId, ref: "Badge", default: [] }],
   feedback: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "Feedback", default: [] },
-  ],
+    { type: mongoose.Schema.Types.ObjectId, ref: "Feedback", default: [] },],
   resetToken: { type: String, default: null },
   resetTokenExpiresAt: { type: Number, default: null },
-});
 
-UserSchema.add(BaseSchema);
+  //le: {type: mongoose.Schema.Types.ObjectId, ref: "Role", required: true, default: new mongoose.Types.ObjectId("67dea9f480ccdc88548f99e7"), },
+
+  github: {
+    username: String,
+    validatedSkills: [{
+      name: String,
+      reposCount: { type: Number, default: 1 },
+      lastUsed: { type: Date, default: Date.now }
+    }],
+    lastUpdated: Date
+  }
+},
+{ timestamps: true }
+);
+// Méthode simplifiée (sans dépendance directe à GitHubService)
+UserSchema.methods.updateGitHubData = function(githubData: {
+  username: string;
+  skills: { name: string; reposCount: number }[]
+}) {
+  this.github = {
+    username: githubData.username,
+    validatedSkills: githubData.skills,
+    lastUpdated: new Date()
+  };
+  return this;
+};
+//UserSchema.add(BaseSchema);
 
 export default mongoose.model<IUser>("User", UserSchema);
+
+

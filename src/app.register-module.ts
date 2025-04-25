@@ -1,6 +1,7 @@
 import { Application, Router, Request, Response } from "express";
 import logger from "./common/utils/logger";
 import UserModule from "./modules/user/user.module";
+
 import BadgeModule from "./modules/badge/badge.module";
 import ChallengeModule from "./modules/challenge/challange.module";
 import FeedbackModule from "./modules/feedback/feedback.module";
@@ -12,6 +13,9 @@ import SalonModule from  "./modules/salon/salon.module";
 import SessionModule from  "./modules/session/session.module"; 
 
 
+
+import MarketplaceModule from "./modules/Marketplace/Marketplace.module";
+import CategoryModule from "./modules/Category/Category.module";
 interface Module {
   path: string;
   handler: Router;
@@ -27,7 +31,8 @@ const modules: Module[] = [
   WalletModule,
   RewardModule,
   SalonModule,
-  SessionModule
+  SessionModule,
+ MarketplaceModule, CategoryModule
 ];
 
 const appRegisterModules = (app: Application): void => {

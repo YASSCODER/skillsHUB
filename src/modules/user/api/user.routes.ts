@@ -1,6 +1,7 @@
 import { Router } from "express";
 import UserController from "./user.controller";
 import catchAsync from "../../../common/utils/catch-async.utils";
+
 import UserService from "./user.service";
 
 const router = Router();

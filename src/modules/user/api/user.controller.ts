@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import UserService from "./user.service";
 
 class UserController {
+
   constructor(private readonly userService: UserService) {}
 
   // Get all users
@@ -24,6 +25,7 @@ class UserController {
       res.status(500).json({ error: "Failed to fetch user" });
     }
   }
+
 
   async createUser(req: Request, res: Response) {
     try {
@@ -56,6 +58,7 @@ class UserController {
       res.status(500).json({ error: "Failed to create user" });
     }
   }
+
 
   async updateUser(req: Request, res: Response) {
     try {

@@ -4,11 +4,17 @@ import catchAsync from "../../../common/utils/catch-async.utils";
 
 const router = Router();
 
-router.get("/", catchAsync(MarketplaceController.getAllOffers));
-router.get("/:id", catchAsync(MarketplaceController.getofferById));
-router.post("/", catchAsync(MarketplaceController.createOffer));
-router.put("/:id", catchAsync(MarketplaceController.updateOffer));
-router.delete("/:id", catchAsync(MarketplaceController.deleteOffer));
-router.get("/offers/filter", MarketplaceController.getOffersByFilter); 
+
+
+router.get("/all/", catchAsync(MarketplaceController.getAllSkills));
+router.get("/getSkillById/:id", catchAsync(MarketplaceController.getSkillById));
+router.post("/createSkill/", catchAsync(MarketplaceController.createSkill));
+router.put("/updateSkill/:id", catchAsync(MarketplaceController.updateSkill));
+router.delete("/deleteSkill/:id", catchAsync(MarketplaceController.deleteSkill));
+router.get("/matchSkills/", catchAsync(MarketplaceController.matchSkills)); 
+router.get("/findUsersWithSkill/", catchAsync(MarketplaceController.findUsersWithSkill));
+router.get("/getSkillsByCategory/", catchAsync(MarketplaceController.getSkillsByCategory));
+router.post('/:userId/verify-github', catchAsync(MarketplaceController.verifyGitHubSkills));
+router.get('/check-skill', catchAsync(MarketplaceController.checkSkill));
 
 export default router;
