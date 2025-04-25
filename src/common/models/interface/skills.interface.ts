@@ -4,4 +4,7 @@ export interface ISkill extends Document {
   name: string;
   category: mongoose.Types.ObjectId;
   users: mongoose.Types.ObjectId[];
+
+  userId: mongoose.Types.ObjectId;
+  createdAt?: Date;
 }

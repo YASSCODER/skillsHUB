@@ -1,4 +1,5 @@
 import userSchema from "../../../common/models/types/user.schema";
+
 import { CreateUserDto } from "../dto/create-user.dto";
 
 class UserService {

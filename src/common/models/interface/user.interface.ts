@@ -1,5 +1,7 @@
 import mongoose, { Document } from "mongoose";
 
+import { RoleEnum } from "../../enum/role.enum";
+
 export interface IUser extends Document {
   fullName: string;
   email: string;
@@ -13,4 +15,16 @@ export interface IUser extends Document {
   feedback: mongoose.Types.ObjectId[];
   resetToken: string;
   resetTokenExpiresAt: number;
+
+//added by manel 
+github?: {
+  username: string;
+  validatedSkills: {
+    name: string;
+    reposCount: number;
+    lastUsed: Date;
+  }[];
+  lastUpdated?: Date;
+};
 }
+//added by manel
