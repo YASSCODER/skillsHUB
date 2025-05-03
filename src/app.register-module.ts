@@ -13,7 +13,6 @@ import SalonModule from  "./modules/salon/salon.module";
 import SessionModule from  "./modules/session/session.module"; 
 
 
-
 import MarketplaceModule from "./modules/Marketplace/Marketplace.module";
 import CategoryModule from "./modules/Category/Category.module";
 interface Module {
