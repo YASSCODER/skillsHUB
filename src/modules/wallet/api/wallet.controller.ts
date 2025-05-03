@@ -83,6 +83,16 @@ class WalletController {
     }
 
     try {
+      // Check if the wallet is active
+      const wallet = await WalletService.getWalletByUserId(userId);
+      if (!wallet) {
+        return res.status(404).json({ error: "Wallet not found" });
+      }
+
+      if (!wallet.isActive) {
+        return res.status(400).json({ error: "Cannot top up a deactivated wallet" });
+      }
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         line_items: [
