@@ -7,10 +7,13 @@ class WalletService {
     return await walletSchema.find().populate("user").populate("imoney");
   }
 
+  static async getWalletByUserId(userId: string) {
+    return await walletSchema.findOne({ user: userId }).populate("user").populate("imoney");
+  }
+
   static async getWalletById(id: string) {
     return await walletSchema.findById(id).populate("user").populate("imoney");
   }
-
   static async createWallet(walletData: any) {
     const imoneyData = walletData.imoney
     const imoney = await Imoney.create(imoneyData);

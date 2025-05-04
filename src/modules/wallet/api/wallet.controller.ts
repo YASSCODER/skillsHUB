@@ -20,6 +20,15 @@ class WalletController {
 
   static async getWalletByUserId(req: Request, res: Response) {
     try {
+      const wallet = await WalletService.getWalletByUserId(req.params.userId);
+      if (!wallet) return res.status(404).json({ error: "Wallet not found for this user" });
+      res.json(wallet);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch wallet" });
+    }
+  }
+  static async getWalletById(req: Request, res: Response) {
+    try {
       const wallet = await WalletService.getWalletById(req.params.id);
       if (!wallet) return res.status(404).json({ error: "Wallet not found" });
       res.json(wallet);
@@ -27,7 +36,6 @@ class WalletController {
       res.status(500).json({ error: "Failed to fetch wallet" });
     }
   }
-
   static async createWallet(req: Request, res: Response) {
     console.log("Create wallet request body:", req.body);
     try {
