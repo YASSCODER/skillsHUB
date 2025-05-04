@@ -103,31 +103,33 @@ class WalletController {
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
+        mode: "payment",
         line_items: [
           {
             price_data: {
               currency: "usd",
               product_data: {
-                name: `Top-Up: ${imoneyValue} iMoney`,
+                name: `iMoney Top-Up (${imoneyValue} iMoney)`,
               },
-              unit_amount: amount * 100,
+              unit_amount: amount * 100, // Stripe expects amount in cents
             },
             quantity: 1,
           },
         ],
-        mode: "payment",
-        success_url: `${process.env.CORS_ORIGIN}/wallet/top-up/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.CORS_ORIGIN}/wallet/top-up/cancel`,
         metadata: {
           userId,
           imoneyValue: imoneyValue.toString(),
         },
+        // Make sure we're using the correct URL format that matches our routes
+        success_url: `http://localhost:4200/wallets/top-up/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `http://localhost:4200/wallets/top-up/cancel`,
       });
 
       console.log("createCheckoutSession - Stripe session created:", {
         sessionId: session.id,
         url: session.url,
         metadata: session.metadata,
+        success_url: session.success_url, // Log the success URL for debugging
       });
 
       res.status(200).json({ url: session.url, sessionId: session.id });
