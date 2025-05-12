@@ -1,12 +1,9 @@
-// ✅ salon.schema.ts
-
 import mongoose, { Schema, Document, model } from "mongoose";
 import { ISalon } from "./interface/salon.interface";
+import Session from "./session.schema";
 
-// ✅ Déclaration de l'interface
 type SalonDocument = Document & ISalon;
 
-// ✅ Création du schéma
 const SalonSchema = new Schema<SalonDocument>({
   nom: { type: String, required: true },
   description: { type: String },
@@ -14,9 +11,16 @@ const SalonSchema = new Schema<SalonDocument>({
   createurId: { type: Schema.Types.ObjectId, ref: "User", required: true },
 }, { timestamps: true });
 
-// ✅ Modèle mongoose
+// Suppression en cascade des sessions liées
+SalonSchema.pre("findOneAndDelete", async function (next) {
+  const salon = await this.model.findOne(this.getFilter());
+  if (salon) {
+    await Session.deleteMany({ salonId: salon._id });
+  }
+  next();
+});
+
 const Salon = model<SalonDocument>("Salon", SalonSchema);
 
-// ✅ Exportations
 export default Salon;
-export type { SalonDocument }; // 🟢 C'est ça qui permet l'import nommé !
+export type { SalonDocument };

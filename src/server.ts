@@ -6,20 +6,21 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
-const MONGO_URI =
-  process.env.MONGO_URI || "mongodb://localhost:27017/myDatabase";
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/myDatabase";
 
-const connectDB = async () => {
+// ✅ Fonction pour connecter à MongoDB
+const connectDB = async (): Promise<void> => {
   try {
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(MONGO_URI); // Supprimez les options dépréciées
     logger.info("[Database] Connected to MongoDB");
   } catch (err) {
     logger.error("[Database] Connection error: " + err);
-    process.exit(1);
+    process.exit(1); // Arrêter l'application si la connexion échoue
   }
 };
 
-const startServer = async () => {
+// ✅ Lancer le serveur Express après la connexion à MongoDB
+const startServer = async (): Promise<void> => {
   await connectDB();
 
   app.listen(PORT, () => {
@@ -27,4 +28,5 @@ const startServer = async () => {
   });
 };
 
+// ✅ Démarrer le serveur
 startServer();

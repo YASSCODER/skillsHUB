@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import dotenv from "dotenv";
 dotenv.config();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe('1e3e8bc0-d6e9-11eb-9b7a-d3dbeb48a7be', {
   apiVersion: "2025-03-31.basil",
 });
 console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
