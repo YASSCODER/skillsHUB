@@ -6,6 +6,3 @@ export interface ISalon {
   dateCreation: Date;
   createurId: Types.ObjectId;
 }
-
-
-
