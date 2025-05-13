@@ -1,4 +1,4 @@
-import { Application, Router } from "express";
+import { Application } from "express";
 import logger from "./common/utils/logger";
 import UserModule from "./modules/user/user.module";
 import BadgeModule from "./modules/badge/badge.module";
@@ -14,14 +14,13 @@ import SessionModule from  "./modules/session/session.module";
 import CommunityModule from "./modules/community/community.module";
 import CommentModule from "./modules/comment/comment.module";
 import ForumModel from "./modules/Forum/forum.module";
+import EventModule from "./modules/Event/event.module";
 
-interface Module {
-  path: string;
-  handler: Router;
-}
-
-const modules: Module[] = [
+const modules = [
   UserModule,
+  CommunityModule,
+  CommentModule,
+  ForumModel,
   BadgeModule,
   ChallengeModule,
   FeedbackModule,
@@ -35,6 +34,7 @@ const modules: Module[] = [
   CommunityModule,
   CommentModule,
 
+  EventModule,
 ];
 
 const appRegisterModules = (app: Application): void => {

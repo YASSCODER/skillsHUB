@@ -1,6 +1,6 @@
-
 import { Request, Response } from 'express';
 import ForumService from './forum.services';
+import Forum from '../../../common/models/types/forum.schema';
 
 class ForumController {
   async getAllForums(req: Request, res: Response): Promise<void> {
@@ -16,8 +16,7 @@ class ForumController {
     try {
       const forum = await ForumService.getForumById(req.params.id);
       if (!forum) {
-        res.status(404).json({ error: 'Forum not found' });
-        return;
+         res.status(404).json({ error: 'Forum not found' });
       }
       res.json(forum);
     } catch (error) {
@@ -30,7 +29,7 @@ class ForumController {
       const newForum = await ForumService.createForum(req.body);
       res.status(201).json(newForum);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to create forum' });
+      res.status(500).json({ error: 'Failed to create forum', details: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 
@@ -39,7 +38,6 @@ class ForumController {
       const updatedForum = await ForumService.updateForum(req.params.id, req.body);
       if (!updatedForum) {
         res.status(404).json({ error: 'Forum not found' });
-        return;
       }
       res.json(updatedForum);
     } catch (error) {
@@ -52,14 +50,13 @@ class ForumController {
       const deletedForum = await ForumService.deleteForum(req.params.id);
       if (!deletedForum) {
         res.status(404).json({ error: 'Forum not found' });
-        return;
       }
       res.json({ message: 'Forum deleted successfully' });
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete forum' });
     }
   }
-  
+
   async rateForum(req: Request, res: Response): Promise<void> {
     try {
       const { forumId, userId } = req.params;
@@ -70,7 +67,7 @@ class ForumController {
       res.status(500).json({ error: 'Failed to rate forum' });
     }
   }
-  
+
   async getForumsByUser(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
@@ -80,7 +77,6 @@ class ForumController {
       res.status(500).json({ error: 'Failed to fetch forums by user' });
     }
   }
-  
 }
 
 

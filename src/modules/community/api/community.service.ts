@@ -1,32 +1,34 @@
 
+import Community from "../../../common/models/types/community.schema";
 import communitySchema from "../../../common/models/types/community.schema";
 
 class CommunityService {
   // Méthodes CRUD de base
-  static async getAllCommunities() {
+  async getAllCommunities() {
     return await communitySchema.find();
   }
 
-  static async getCommunityById(id: string) {
-    return await communitySchema.findById(id);
+  async getCommunityById(id: string): Promise<any> {
+    return await Community.findById(id); // Fetch the community by its ID
   }
 
-  static async createCommunity(communityData: any) {
+
+  async createCommunity(communityData: any) {
     return await communitySchema.create(communityData);
   }
 
-  static async updateCommunity(id: string, communityData: any) {
+  async updateCommunity(id: string, communityData: any) {
     return await communitySchema.findByIdAndUpdate(id, communityData, { new: true });
   }
 
-  static async deleteCommunity(id: string) {
+  async deleteCommunity(id: string) {
     return await communitySchema.findByIdAndDelete(id);
   }
 
   // Méthodes métier supplémentaires :
 
   // Vérifier si un utilisateur est membre d'une communauté
-  static async isUserMember(communityId: string, userId: string) {
+  async isUserMember(communityId: string, userId: string) {
     const communityData = await communitySchema.findById(communityId);
     if (!communityData) throw new Error("Community not found");
 
@@ -34,7 +36,7 @@ class CommunityService {
   }
 
   // Ajouter un membre à la communauté
-  static async addMemberToCommunity(communityId: string, userId: string) {
+  async addMemberToCommunity(communityId: string, userId: string) {
     const communityData = await communitySchema.findById(communityId);
     if (!communityData) throw new Error("Community not found");
 
@@ -49,7 +51,7 @@ class CommunityService {
   }
 
   // Retirer un membre d'une communauté
-  static async removeMemberFromCommunity(communityId: string, userId: string) {
+  async removeMemberFromCommunity(communityId: string, userId: string) {
     const communityData = await communitySchema.findById(communityId);
     if (!communityData) throw new Error("Community not found");
 
@@ -63,6 +65,40 @@ class CommunityService {
 
     return communityData;
   }
+
+  /**
+   * Recherche des communautés par nom ou tags
+   */
+  async searchCommunities(query: string): Promise<any[]> {
+    try {
+      // Add error handling and validation
+      if (!query) {
+        return [];
+      }
+      
+      // Use a try-catch block to handle potential regex errors
+      let regex;
+      try {
+        regex = new RegExp(query, 'i');
+      } catch (e) {
+        // If the query contains special regex characters, escape them
+        regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      }
+      
+      return await Community.find({
+        $or: [
+          { name: { $regex: regex } },
+          { description: { $regex: regex } },
+          { tags: { $regex: regex } }
+        ]
+      }).limit(10);
+    } catch (error) {
+      console.error('Search error:', error);
+      throw error;
+    }
+  }
 }
 
-export default CommunityService;
+// À la fin du fichier
+const communityService = new CommunityService();
+export default communityService;

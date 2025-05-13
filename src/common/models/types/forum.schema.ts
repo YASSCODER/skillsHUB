@@ -1,28 +1,20 @@
-import mongoose, { Schema } from "mongoose";
-import { BaseSchema } from "../base-model.schema";
+import mongoose from "mongoose";
 import { IForum } from "../interface/forum.interface";
 
-const ForumSchema: Schema = new Schema<IForum>({
+const forumSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
+  author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   content: { type: String, required: true },
+  content_en: { type: String },
   comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }],
-  community: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Community",
-    required: true,
-  },
-  ratings: [
-    {
-      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      score: { type: Number, min: 1, max: 5 },
-    },
-  ],
+  community: { type: mongoose.Schema.Types.ObjectId, ref: "Community" },
+  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  ratings: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    score: { type: Number }
+  }]
 });
 
-ForumSchema.add(BaseSchema);
-export default mongoose.model<IForum>("Forum", ForumSchema);
+const Forum = mongoose.model<IForum>("Forum", forumSchema);
+
+export default Forum;

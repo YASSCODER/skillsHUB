@@ -19,6 +19,8 @@ app.use(
     credentials: true,
   })
 );
+app.use(express.json());
+app.use(cors());
 
 // Middleware pour parser les requêtes JSON
 app.use(express.json());

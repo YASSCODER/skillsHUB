@@ -21,6 +21,26 @@ const connectDB = async (): Promise<void> => {
     logger.error("[Database] Connection error: " + err);
     process.exit(1); // Arrêter l'application si la connexion échoue
   }
+  // Simuler les données récupérées depuis la BD
+const communities = [
+  { id: 1, name: 'Communauté 1' },
+  { id: 2, name: 'Communauté 2' },
+];
+
+const authors = [
+  { id: 1, name: 'Auteur 1' },
+  { id: 2, name: 'Auteur 2' },
+];
+
+// Récupérer toutes les communautés
+app.get('/api/communities', (req, res) => {
+  res.json(communities);
+});
+
+// Récupérer tous les auteurs
+app.get('/api/authors', (req, res) => {
+  res.json(authors);
+});
 };
 
 // ✅ Lancer le serveur Express après la connexion à MongoDB
