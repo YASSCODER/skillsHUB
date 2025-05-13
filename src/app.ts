@@ -1,11 +1,11 @@
 import { Application, Request, Response, NextFunction } from "express";
 import logger from "./common/utils/logger";
 import cors from "cors";
-import express from "express";
 import dotenv from "dotenv";
 import appRegisterModules from "./app.register-module";
 import salonsRouter from "./modules/salon/api/salon.route";
 import sessionsRoutes from './modules/session/api/session.route';
+import express from "express";
 dotenv.config();
 
 const app: Application = express();
@@ -19,6 +19,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(cors());
 
 // Middleware pour parser les requêtes JSON
 app.use(express.json());

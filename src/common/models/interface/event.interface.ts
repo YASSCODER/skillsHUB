@@ -6,5 +6,6 @@ export interface IEvent extends Document {
   location: string;
   date: Date;
   creator: mongoose.ObjectId;
+
   community: mongoose.ObjectId;
 }
