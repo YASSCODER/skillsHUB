@@ -13,7 +13,7 @@ if (!MONGO_URI) {
 const connectDB = async () => {
   try {
     await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 3000,
     });
 
     logger.info("[Database] ✅ Connected to MongoDB Atlas");
