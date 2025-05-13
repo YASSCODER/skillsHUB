@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import CommunityService from './community.service';
+import communityService from './community.service';
 import { CommunityModel } from '../../../common/models/community.model';
+import Community from '../../../common/models/types/community.schema';
 
 class CommunityController {
   // ✅ Créer une communauté
@@ -26,27 +27,20 @@ class CommunityController {
   }
   
 
-  // ✅ Récupérer toutes les communautés
   static async getAllCommunities(req: Request, res: Response): Promise<Response> {
     try {
-      const communities = await CommunityService.getAllCommunities();
-
-      if (!communities || communities.length === 0) {
-        return res.status(404).json({ error: "No communities found" });
-      }
-
-      return res.json(communities);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Failed to retrieve communities" });
+      const communities = await communityService.getAllCommunities();
+      return res.status(200).json(communities);
+    } catch (err) {
+      return res.status(500).json({ error: 'Erreur récupération communautés', details: err });
     }
   }
-
+  
   // ✅ Récupérer une communauté par son ID
   static async getCommunityById(req: Request, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
-      const community = await CommunityService.getCommunityById(id.trim());
+      const community = await communityService.getCommunityById(id.trim());
 
       if (!community) {
         return res.status(404).json({ error: "Community not found" });
@@ -63,8 +57,7 @@ class CommunityController {
   static async updateCommunity(req: Request, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
-      const { name, description } = req.body;
-      const updatedCommunity = await CommunityService.updateCommunity(id.trim(), name);
+      const updatedCommunity = await communityService.updateCommunity(id.trim(), req.body);
 
       if (!updatedCommunity) {
         return res.status(404).json({ error: "Community not found" });
@@ -84,7 +77,7 @@ class CommunityController {
   static async deleteCommunity(req: Request, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
-      const deletedCommunity = await CommunityService.deleteCommunity(id.trim());
+      const deletedCommunity = await communityService.deleteCommunity(id.trim());
 
       if (!deletedCommunity) {
         return res.status(404).json({ error: "Community not found" });
@@ -101,7 +94,7 @@ class CommunityController {
   static async isUserMember(req: Request, res: Response): Promise<Response> {
     try {
       const { idCommunity, idUser } = req.params;
-      const isMember = await CommunityService.isUserMember(idCommunity.trim(), idUser.trim());
+      const isMember = await communityService.isUserMember(idCommunity.trim(), idUser.trim());
 
       return res.json({ isMember });
     } catch (error) {
@@ -114,7 +107,7 @@ class CommunityController {
   static async addMemberToCommunity(req: Request, res: Response): Promise<Response> {
     try {
       const { idCommunity, idUser } = req.params;
-      const updated = await CommunityService.addMemberToCommunity(idCommunity.trim(), idUser.trim());
+      const updated = await communityService.addMemberToCommunity(idCommunity.trim(), idUser.trim());
 
       return res.json({ message: "Member added successfully", community: updated });
     } catch (error) {
@@ -127,12 +120,43 @@ class CommunityController {
   static async removeMemberFromCommunity(req: Request, res: Response): Promise<Response> {
     try {
       const { idCommunity, idUser } = req.params;
-      const updated = await CommunityService.removeMemberFromCommunity(idCommunity.trim(), idUser.trim());
+      const updated = await communityService.removeMemberFromCommunity(idCommunity.trim(), idUser.trim());
 
       return res.json({ message: "Member removed successfully", community: updated });
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: "Failed to remove member" });
+    }
+  }
+
+  // ✅ Rechercher des communautés
+  static async searchCommunities(req: Request, res: Response): Promise<void> {
+    try {
+      const query = req.query.q as string;
+      console.log('Search query received:', query); // Ajout de log pour déboguer
+      
+      if (!query) {
+        res.status(400).json({
+          success: false,
+          message: 'Paramètre de recherche requis'
+        });
+        return;
+      }
+      
+      const communities = await communityService.searchCommunities(query);
+      console.log('Search results:', communities.length); // Ajout de log pour déboguer
+      
+      res.status(200).json({
+        success: true,
+        count: communities.length,
+        data: communities
+      });
+    } catch (error: any) {
+      console.error('Search error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Erreur lors de la recherche des communautés'
+      });
     }
   }
 }

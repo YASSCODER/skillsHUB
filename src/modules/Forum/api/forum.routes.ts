@@ -11,5 +11,4 @@ router.put('/:id', catchAsync(ForumController.updateForum));
 router.delete('/:id',catchAsync( ForumController.deleteForum));
 router.post("/:forumId/rate/:userId", catchAsync(ForumController.rateForum));
 router.get("/byUser/:userId", catchAsync(ForumController.getForumsByUser));
-
 export default router;

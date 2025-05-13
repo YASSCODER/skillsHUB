@@ -1,14 +1,10 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 import { BaseSchema } from "../base-model.schema";
 import { ICommunity } from "../interface/community.interface";
 
-const CommunitySchema: Schema = new Schema<ICommunity>({
+const CommunitySchema = new mongoose.Schema<ICommunity>({
   name: { type: String, required: true },
-  creator: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
+  creator: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
   forums: [{ type: mongoose.Schema.Types.ObjectId, ref: "Forum" }],
@@ -16,4 +12,6 @@ const CommunitySchema: Schema = new Schema<ICommunity>({
 
 CommunitySchema.add(BaseSchema);
 
-export default mongoose.model<ICommunity>("Community", CommunitySchema);
+const Community = mongoose.models.Community || mongoose.model<ICommunity>("Community", CommunitySchema);
+
+export default Community;

@@ -10,7 +10,7 @@ dotenv.config();
 const app: Application = express();
 
 app.use(express.json());
-app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+app.use(cors());
 
 appRegisterModules(app);
 

@@ -1,4 +1,4 @@
-import commentSchema from "../../../common/models/types/user.schema";
+import commentSchema from "../../../common/models/types/comment.schema";
 
 class CommentService {
   static async getAllComments() {
