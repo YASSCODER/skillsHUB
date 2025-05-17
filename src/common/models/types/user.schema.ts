@@ -21,7 +21,16 @@ const UserSchema: Schema = new Schema<IUser>({
   skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Skill", default: [] }],
   communities: [
     { type: mongoose.Schema.Types.ObjectId, ref: "Community", default: [] },
-  ],
+  ],  
+  github: {
+    username: String,
+    validatedSkills: [{
+      name: String,
+      reposCount: { type: Number, default: 1 },
+      lastUsed: { type: Date, default: Date.now }
+    }],
+    lastUpdated: Date
+  },
   challenges: [
     { type: mongoose.Schema.Types.ObjectId, ref: "Challenge", default: [] },
   ],

@@ -1,13 +1,14 @@
 import mongoose, { Schema } from "mongoose";
 import { BaseSchema } from "../base-model.schema";
-export const SkillsSchema: Schema = new Schema({
+import { ISkill } from "../interface/skills.interface";
+import { userInfo } from "os";
+export const SkillsSchema: Schema = new Schema<ISkill>({
   name: { type: String, required: true },
-  category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Category",
-    required: true,
-  },
+  description: { type: String, required: true },
+  category: {type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true},
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  createdAt: { type: Date, default: Date.now }
 });
 
 SkillsSchema.add(BaseSchema);
