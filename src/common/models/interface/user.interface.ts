@@ -13,4 +13,14 @@ export interface IUser extends Document {
   feedback: mongoose.Types.ObjectId[];
   resetToken: string;
   resetTokenExpiresAt: number;
+  //added by manel 
+  github?: {
+  username: string;
+  validatedSkills: {
+    name: string;
+    reposCount: number;
+    lastUsed: Date;
+  }[];
+  lastUpdated?: Date;
+};
 }
