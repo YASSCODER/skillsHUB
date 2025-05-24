@@ -6,7 +6,7 @@ export type SessionDocument = Document & ISession;
 
 const SessionSchema = new Schema<SessionDocument>(
   {
-    salonId: { type: Schema.Types.ObjectId, ref: "Salon", required: true },
+    salonId: { type: Schema.Types.ObjectId, ref: "Salon", required: false },
     type: { type: String, enum: ["chat", "meet"], required: true },
     dateDebut: { 
       type: Date, 

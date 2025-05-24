@@ -4,55 +4,23 @@ import logger from "../common/utils/logger";
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-  throw new Error("⚠️ MONGO_URI is not defined in .env file");
-}
+// Utiliser l'URI de MongoDB Atlas ou une valeur par défaut pour MongoDB local
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/skillsHub";
 
 const connectDB = async () => {
   try {
-    // Enhanced connection options for MongoDB Atlas
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 10000, // Increased timeout for Atlas
-      socketTimeoutMS: 45000,
-      bufferCommands: false,
-      maxPoolSize: 10,
-      retryWrites: true,
-      w: 'majority'
+    // Utiliser 127.0.0.1 au lieu de localhost pour éviter les problèmes IPv6
+    const uri = MONGO_URI.replace('localhost', '127.0.0.1');
+    
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000, // Augmenter le timeout
     });
 
-    logger.info("[Database] ✅ Connected to MongoDB Atlas");
-
-    // Handle connection events
-    mongoose.connection.on('error', (err) => {
-      logger.error("[Database] ❌ Connection error:", err);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      logger.warn("[Database] ⚠️ Disconnected from MongoDB");
-    });
-
-    mongoose.connection.on('reconnected', () => {
-      logger.info("[Database] ✅ Reconnected to MongoDB");
-    });
-
+    logger.info("[Database] ✅ Connected to MongoDB");
   } catch (err) {
-    logger.error("[Database] ❌ Connection error:", err);
-
-    // More detailed error information
-    if (err instanceof Error) {
-      if (err.message.includes('ECONNREFUSED')) {
-        logger.error("[Database] ❌ Connection refused - Check your network connection and MongoDB Atlas cluster status");
-      } else if (err.message.includes('authentication failed')) {
-        logger.error("[Database] ❌ Authentication failed - Check your MongoDB credentials");
-      } else if (err.message.includes('querySrv ECONNREFUSED')) {
-        logger.error("[Database] ❌ DNS resolution failed - Check your internet connection and MongoDB Atlas cluster URL");
-      }
-    }
-
-    throw err; // Re-throw to be handled by the caller
+    logger.error("[Database] ❌ Connection error: " + err);
+    process.exit(1);
   }
 };
 
-export default connectDB;
+export default connectDB;

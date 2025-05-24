@@ -6,8 +6,9 @@ const router = Router();
 const sessionController = new SessionController();
 
 // ➕ Créer une session
-router.post("/", catchAsync((req, res) => sessionController.createSession(req, res)));
+router.get('/search', catchAsync((req, res) => sessionController.searchSessions(req, res)));
 
+router.post("/", catchAsync((req, res) => sessionController.createSession(req, res)));
 // 📋 Récupérer toutes les sessions
 router.get("/", catchAsync((req, res) => sessionController.getAllSessions(req, res)));
 
@@ -43,5 +44,9 @@ router.post("/salons/:salonId/multiple", catchAsync((req, res) => sessionControl
 
 // ➕ Créer une session dans un salon donné par son ID
 router.post("/salons/:salonId/sessions", catchAsync((req, res) => sessionController.createSessionForSalon(req, res)));
+
+// Nouvelles routes pour filtrer par compétence
+router.get("/skill/:skillId", catchAsync(async (req, res) => sessionController.getSessionsBySkill(req, res)));
+router.get("/salon/:salonId/skill/:skillId", catchAsync(async (req, res) => sessionController.getSessionsBySalonAndSkill(req, res)));
 
 export default router;
