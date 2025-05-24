@@ -1,56 +1,27 @@
-import mongoose from "mongoose";
 import logger from "./common/utils/logger";
 import app from "./app";
 import dotenv from "dotenv";
+import connectDB from "./config/database.config";
 
-dotenv.config(); // Charger .env en haut
+dotenv.config();
 
 const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/myDatabase";
 
-// ✅ Fonction pour connecter à MongoDB
-const connectDB = async (): Promise<void> => {
-  try {
-    await mongoose.connect(MONGO_URI); // Supprimez les options dépréciées
-    logger.info("[Database] Connected to MongoDB");
-
-    app.listen(PORT, () => {
-      logger.info(`🚀 Serveur démarré sur http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    logger.error("[Database] Connection error: " + err);
-    process.exit(1); // Arrêter l'application si la connexion échoue
-  }
-  // Simuler les données récupérées depuis la BD
-const communities = [
-  { id: 1, name: 'Communauté 1' },
-  { id: 2, name: 'Communauté 2' },
-];
-
-const authors = [
-  { id: 1, name: 'Auteur 1' },
-  { id: 2, name: 'Auteur 2' },
-];
-
-// Récupérer toutes les communautés
-app.get('/api/communities', (req, res) => {
-  res.json(communities);
-});
-
-// Récupérer tous les auteurs
-app.get('/api/authors', (req, res) => {
-  res.json(authors);
-});
-};
-
-// ✅ Lancer le serveur Express après la connexion à MongoDB
+// ✅ Start the server after connecting to MongoDB
 const startServer = async (): Promise<void> => {
-  await connectDB();
+  try {
+    // Connect to MongoDB first
+    await connectDB();
 
-  app.listen(PORT, () => {
-    logger.info(`[Express] Server running on port ${PORT}`);
-  });
+    // Start the Express server
+    app.listen(PORT, () => {
+      logger.info(`[Express] Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    logger.error("[Server] Failed to start server:", error);
+    process.exit(1);
+  }
 };
 
-// ✅ Démarrer le serveur
+// ✅ Start the server
 startServer();
