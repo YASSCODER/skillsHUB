@@ -97,6 +97,18 @@ class CommunityService {
       throw error;
     }
   }
+
+  // Récupérer une communauté avec ses membres (avec population)
+  async getCommunityWithMembers(communityId: string) {
+    try {
+      return await Community.findById(communityId)
+        .populate('members', 'username email profilePicture') // Ajustez les champs selon votre modèle User
+        .exec();
+    } catch (error) {
+      console.error('Error fetching community with members:', error);
+      throw error;
+    }
+  }
 }
 
 // À la fin du fichier
