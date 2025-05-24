@@ -12,8 +12,9 @@ export const SessionSchema: Schema = new Schema({
     required: true,
   },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  skillId: { type: mongoose.Schema.Types.ObjectId, ref: "Skills" }, // Ajout du skillId
 });
 
-SessionSchema.add(BaseSchema); // Ajout des champs communs (createdAt, updatedAt, etc.)
+SessionSchema.add(BaseSchema);
 
 export default mongoose.model("Session", SessionSchema);

@@ -3,21 +3,40 @@ import { SalonService } from "./salon.service";
 import { SessionService } from "../../session/api/session.service";
 import Salon from "../../../common/models/salon.schema";
 import Session from "../../../common/models/session.schema";
-
+import Notification from "../../../common/models/notification.schema";
+import nodemailer from "nodemailer";
+import QRCode from "qrcode";
 const salonService = new SalonService();
 const sessionService = new SessionService();
 
 export class SalonController {
+  private salonService: SalonService;
+
+  constructor() {
+    this.salonService = new SalonService();
+  }
+
   async createSalon(req: Request, res: Response) {
     try {
       const salon = await salonService.createSalon(req.body);
+
+      // --- AJOUT NOTIFICATION ---
+      if (salon && salon.createurId) {
+        await Notification.create({
+          userId: salon.createurId, // adapte selon ta structure (peut-être req.body.createurId)
+          message: `Le salon "${salon.nom}" a été créé avec succès.`,
+          date: new Date(),
+          lu: false
+        });
+      }
+      // --- FIN AJOUT NOTIFICATION ---
+
       res.status(201).json(salon);
     } catch (error: any) {
       console.error("Erreur création salon :", error.message);
       res.status(400).json({ error: error.message });
     }
   }
-
   async getAllSalons(req: Request, res: Response) {
     try {
       const salons = await salonService.getAllSalons();
@@ -78,7 +97,7 @@ export class SalonController {
   async getSalonByName(req: Request, res: Response) {
     try {
       const { name } = req.params;
-      const salons = await salonService.getSalonByName(decodeURIComponent(name));
+      const salons = await salonService.findByNom(decodeURIComponent(name));
       if (!salons || salons.length === 0) {
         return res.status(404).json({ error: "Aucun salon trouvé avec ce nom" });
       }
@@ -89,14 +108,6 @@ export class SalonController {
     }
   }
 
-  async getSalonsByUser(req: Request, res: Response) {
-    try {
-      const salons = await salonService.findSalonsByUser(req.params.userId);
-      res.status(200).json(salons);
-    } catch (error) {
-      res.status(500).json({ error: "Erreur lors de la récupération des salons" });
-    }
-  }
   async updateSalonByName(req: Request, res: Response) {
     try {
       const { name } = req.params;
@@ -112,7 +123,11 @@ export class SalonController {
         delete req.body.nom;
       }
   
-      const updatedSalon = await salonService.updateSalonByName(name, req.body);
+      const updatedSalon = await salonService.findByNom(name);
+      if (updatedSalon) {
+        Object.assign(updatedSalon, req.body);
+        await updatedSalon.save();
+      }
   
       if (!updatedSalon) {
         return res.status(404).json({ error: "Salon non trouvé" });
@@ -129,7 +144,10 @@ export class SalonController {
   async deleteSalon(req: Request, res: Response) {
     try {
       const { name } = req.params; // On récupère le nom du salon
-      const salon = await salonService.deleteSalonByName(name); // Appel au service pour supprimer par nom
+      const salon = await salonService.findByNom(name);
+      if (salon) {
+        await salon.deleteOne();
+      }
       if (!salon) {
         return res.status(404).json({ error: "Salon non trouvé" });
       }
@@ -142,28 +160,123 @@ export class SalonController {
   async existsSalonByName(req: Request, res: Response) {
     try {
       const { name } = req.params;
-      const exists = await salonService.existsSalonByName(name);
+      const exists = await salonService.findByNom(name) !== null;
       res.status(200).json({ exists });
     } catch (error) {
       res.status(500).json({ error: "Erreur lors de la vérification du salon" });
     }
   }
 
-  async countSalonsByUser(req: Request, res: Response) {
+
+   async inviterParticipant(req: Request, res: Response) {
     try {
-      const { userId } = req.params;
-      const count = await salonService.countSalonsByUser(userId);
-      res.status(200).json({ count });
+      const { email, salonId } = req.body;
+
+      // Récupérer le salon (pour le nom, etc)
+      const salon = await Salon.findById(salonId);
+      if (!salon) return res.status(404).json({ error: "Salon non trouvé" });
+
+      // Générer un lien d'invitation (ajuste selon ta logique)
+      const invitationLink = `https://tonapp.com/invitation?salon=${salonId}&email=${encodeURIComponent(email)}`;
+
+      // Générer le QR code en base64
+      const qrCodeDataUrl = await QRCode.toDataURL(invitationLink);
+
+      // Création d’un compte SMTP de test Ethereal (pas besoin d'email réel)
+      const testAccount = await nodemailer.createTestAccount();
+
+ const transporter = nodemailer.createTransport({
+  host: testAccount.smtp.host,
+  port: testAccount.smtp.port,
+  secure: testAccount.smtp.secure,
+  auth: {
+    user: testAccount.user,
+    pass: testAccount.pass,
+  },
+  tls: {
+    rejectUnauthorized: false, // << AJOUTE CETTE LIGNE
+  },
+});
+
+      const htmlContent = `
+        <div style="font-family:Arial,sans-serif;">
+          <h2 style="color:#5b6ee1;">Invitation au salon <span>${salon.nom}</span></h2>
+          <p>Bonjour,<br>Vous êtes invité à participer au salon <b>${salon.nom}</b>.</p>
+          <p>Scannez ce QR code pour rejoindre le salon :</p>
+          <img src="${qrCodeDataUrl}" alt="QR Code" style="width:150px; height:150px; margin:16px 0;" />
+          <p>Ou cliquez ici : <a href="${invitationLink}">${invitationLink}</a></p>
+          <p style="color:#8fa6fa;">À bientôt sur notre plateforme !</p>
+        </div>
+      `;
+
+      // Envoi du mail
+      const info = await transporter.sendMail({
+        from: '"MonApp Salons" <no-reply@ethereal.email>',
+        to: email,
+        subject: `Invitation à participer au salon "${salon.nom}"`,
+        html: htmlContent,
+      });
+
+      // Lien d’aperçu Ethereal (affiché dans la réponse API)
+      res.json({
+        message: "Invitation envoyée avec succès (test Ethereal) !",
+        etherealPreview: nodemailer.getTestMessageUrl(info),
+      });
     } catch (error) {
-      res.status(500).json({ error: "Erreur lors du comptage des salons" });
+      console.error(error);
+      res.status(500).json({ error: "Erreur lors de l'envoi de l'invitation." });
     }
   }
 
+
   async getUserLeaderboard(req: Request, res: Response) {
     try {
-      const leaderboard = await salonService.getUserLeaderboard();
+      const leaderboard = await this.salonService.getUserLeaderboard();
       res.status(200).json(leaderboard);
     } catch (error) {
       res.status(500).json({ error: "Erreur lors de la récupération du leaderboard" });
     }  }
+
+     /**
+   * Recherche multi-critères sur les salons
+   * Query params acceptés : nom, description, createurNom, dateMin, dateMax, etat, etc.
+   */
+  async searchSalons(req: Request, res: Response) {
+  try {
+    const { nom } = req.query;
+    const filter: any = {};
+    if (nom) filter.nom = { $regex: nom as string, $options: "i" };
+
+    const salons = await Salon.find(filter);
+    res.json(salons);
+  } catch (err) {
+    console.error("Erreur recherche salons :", err);
+    res.status(500).json({ error: "Erreur lors de la récupération du salon" });
+  }
 }
+
+  // Nouvelle méthode pour récupérer les salons par compétence
+  async getSalonsBySkill(req: Request, res: Response) {
+    const { skillId } = req.params;
+    
+    try {
+      const salons = await this.salonService.getSalonsBySkill(skillId);
+      return res.status(200).json(salons);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  }
+
+  // Nouvelle méthode pour récupérer les salons avec sessions par compétence
+  async getSalonsWithSessionsBySkill(req: Request, res: Response) {
+    const { skillId } = req.params;
+    
+    try {
+      const salons = await this.salonService.getSalonsWithSessionsBySkill(skillId);
+      return res.status(200).json(salons);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  }
+}
+

@@ -1,9 +1,9 @@
 import mongoose, { Schema } from "mongoose";
-import { BaseSchema } from "../base-model.schema"; // Si vous avez un schéma de base avec des champs communs comme `createdAt`, `updatedAt`
+import { BaseSchema } from "../base-model.schema";
 
 export const SalonSchema: Schema = new Schema(
   {
-    nom: { type: String, required: true }, // Utilisez 'nom' ici, comme défini dans l'interface ISalon
+    nom: { type: String, required: true },
     description: { type: String },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -13,11 +13,12 @@ export const SalonSchema: Schema = new Schema(
     sessions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Session" }],
     isPublic: { type: Boolean, default: true },
     tags: [{ type: String }],
+    skillId: { type: mongoose.Schema.Types.ObjectId, ref: "Skills" },
   },
-  { timestamps: true } // Si vous avez des champs `createdAt` et `updatedAt`
+  { timestamps: true }
 );
 
-SalonSchema.add(BaseSchema); // Ajoutez si nécessaire des champs comme `createdAt`, `updatedAt`
+SalonSchema.add(BaseSchema);
 
 export default mongoose.model("Salon", SalonSchema);
 
