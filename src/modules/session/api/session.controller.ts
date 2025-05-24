@@ -8,7 +8,24 @@ const salonService = new SalonService(); // Service for managing salons
 const sessionService = new SessionService(); // Service for managing sessions
 
 export class SessionController {
+  private sessionService: SessionService;
+
+  constructor() {
+    this.sessionService = new SessionService();
+  }
+
   // Create a new session
+
+    async searchSessions(req: Request, res: Response): Promise<Response> {
+    try {
+      const filters = req.query;
+      const sessions = await sessionService.advancedSearch(filters);
+      return res.status(200).json(sessions);
+    } catch (error) {
+      console.error("Erreur recherche avancée sessions :", error);
+      return res.status(500).json({ error: "Erreur lors de la recherche des sessions." });
+    }
+  }
   async createSession(req: Request, res: Response): Promise<Response> {
     try {
       const { salonNom } = req.params; // Extract salon name from URL parameters
@@ -192,6 +209,30 @@ export class SessionController {
     } catch (error) {
       console.error("Erreur lors de la création de la session :", error);
       return res.status(500).json({ error: "Erreur lors de la création de la session" });
+    }
+  }
+
+  // Nouvelle méthode pour récupérer les sessions par compétence
+  async getSessionsBySkill(req: Request, res: Response) {
+    const { skillId } = req.params;
+    
+    try {
+      const sessions = await this.sessionService.getSessionsBySkill(skillId);
+      return res.status(200).json(sessions);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  }
+
+  // Nouvelle méthode pour récupérer les sessions par salon et compétence
+  async getSessionsBySalonAndSkill(req: Request, res: Response) {
+    const { salonId, skillId } = req.params;
+    
+    try {
+      const sessions = await this.sessionService.getSessionsBySalonAndSkill(salonId, skillId);
+      return res.status(200).json(sessions);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
     }
   }
 }

@@ -5,6 +5,6 @@ export interface ISession extends Document {
   type: "chat" | "meet";
   dateDebut: Date;
   dateFin: Date;
-  createurNom: string; // Remplacement de createurId par createurNom
+  createurNom: string;
   etat: "active" | "terminée" | "en attente";
 }

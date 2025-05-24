@@ -1,11 +1,35 @@
+import { isValidObjectId } from "mongoose";
 import Session, { SessionDocument } from "../../../common/models/session.schema";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import Salon from "../../../common/models/salon.schema";
 
 dayjs.extend(customParseFormat);
 
 export class SessionService {
   // Créer une session
+
+   async advancedSearch(filters: any): Promise<SessionDocument[]> {
+    const query: any = {};
+    if (filters.salonNom) {
+      // On doit peupler le salon par nom, donc faire une jointure
+      const salon = await Salon.findOne({ nom: filters.salonNom });
+      if (salon) query.salonId = salon._id;
+      else return []; // Aucun salon trouvé, aucun résultat
+    }
+    if (filters.type) query.type = filters.type;
+    if (filters.createurNom) query.createurNom = { $regex: filters.createurNom, $options: 'i' };
+    if (filters.etat) query.etat = filters.etat;
+    if (filters.dateMin || filters.dateMax) {
+      query.dateDebut = {};
+      if (filters.dateMin) query.dateDebut.$gte = new Date(filters.dateMin);
+      if (filters.dateMax) query.dateDebut.$lte = new Date(filters.dateMax);
+    }
+    return Session.find(query)
+      .populate('salonId', 'nom')
+      .sort({ dateDebut: -1 })
+      .exec();
+  }
   async createSession(salonId: string, data: Partial<SessionDocument>): Promise<any> {
     const format = "DD/MM/YYYY HH:mm";
 
@@ -178,5 +202,27 @@ export class SessionService {
       }
       throw error;
     }
+  }
+
+  // Créer une session
+  async createSession(sessionData: Partial<SessionDocument>): Promise<SessionDocument> {
+    const session = new Session(sessionData);
+    return await session.save();
+  }
+
+  // Récupérer les sessions par compétence
+  async getSessionsBySkill(skillId: string): Promise<SessionDocument[]> {
+    if (!isValidObjectId(skillId)) {
+      throw new Error("ID de compétence invalide");
+    }
+    return await Session.find({ skillId }).exec();
+  }
+
+  // Récupérer les sessions par salon et compétence
+  async getSessionsBySalonAndSkill(salonId: string, skillId: string): Promise<SessionDocument[]> {
+    if (!isValidObjectId(salonId) || !isValidObjectId(skillId)) {
+      throw new Error("ID de salon ou de compétence invalide");
+    }
+    return await Session.find({ salonId, skillId }).exec();
   }
 }

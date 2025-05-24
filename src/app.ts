@@ -1,46 +1,46 @@
-import { Application, Request, Response, NextFunction } from "express";
+import express, { Application, Request, Response, NextFunction } from "express";
 import logger from "./common/utils/logger";
 import cors from "cors";
-import express from "express";
 import dotenv from "dotenv";
+import path from "path";
 import appRegisterModules from "./app.register-module";
 import salonsRouter from "./modules/salon/api/salon.route";
 import sessionsRoutes from './modules/session/api/session.route';
+import documentRoute from "./modules/document/api/document.route";
+
 dotenv.config();
 
 const app: Application = express();
 
-// Configurez CORS pour autoriser les requêtes provenant du front-end
 app.use(
   cors({
-    origin: 'http://localhost:4200', // URL du front-end
+    origin: 'http://localhost:4200',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
 );
 
-// Middleware pour parser les requêtes JSON
 app.use(express.json());
-// ✅ Enregistrer les routes/modules
 appRegisterModules(app);
 
-// ✅ Route de vérification de santé
 app.get("/", (req: Request, res: Response) => {
   res.send({ message: "Server is running!" });
 });
 
-// ✅ Ajoutez un endpoint de test simple
 app.get("/api/test", (req: Request, res: Response) => {
   res.status(200).json({ message: "API is working!" });
 });
-// Routes
+
 app.use('/api/salon', salonsRouter);
-// ✅ Gestion globale des erreurs
+app.use('/api/sessions', sessionsRoutes);
+app.use("/api/document", documentRoute);
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   logger.error(`Error: ${err.message}`);
   res.status(500).json({ error: "Internal Server Error" });
 });
-app.use('/api/sessions', sessionsRoutes);
+
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 
 export default app;

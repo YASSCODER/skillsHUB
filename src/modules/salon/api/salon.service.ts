@@ -1,4 +1,4 @@
-import { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import Salon, { SalonDocument } from "../../../common/models/salon.schema";
 import Session from "../../../common/models/session.schema";
 
@@ -34,85 +34,12 @@ export class SalonService {
     return await Salon.find().exec();
   }
 
-  async updateSalonByName(nom: string, data: Partial<SalonDocument>): Promise<SalonDocument | null> {
-    console.log("Tentative de mise à jour du salon avec le nom :", nom);
-  
-    const updatedSalon = await Salon.findOneAndUpdate(
-      { nom: nom }, // Recherche le salon par son nom
-      data,         // Données à mettre à jour (ne doit contenir que la description)
-      { new: true } // Retourne le salon mis à jour
-    ).exec();
-  
-    if (!updatedSalon) {
-      console.log("Salon introuvable pour la mise à jour :", nom);
+  // Récupérer les salons par compétence
+  async getSalonsBySkill(skillId: string): Promise<SalonDocument[]> {
+    if (!isValidObjectId(skillId)) {
+      throw new Error("ID de compétence invalide");
     }
-  
-    return updatedSalon;
-  }
-  
-
-  async deleteSalonByName(nom: string): Promise<SalonDocument | null> {
-    return await Salon.findOneAndDelete({ nom: nom }).exec(); // Recherche et suppression par nom
-  }  
-
-// backend — salon.service.ts
-async getSalonByName(nom: string): Promise<SalonDocument[]> {
-  return await Salon.find({
-    nom: { $regex: new RegExp(nom, "i") }, // Match partiel, insensible à la casse
-  }).exec();
-}
-
-
-  // Récupérer tous les salons créés par un utilisateur
-  async findSalonsByUser(userId: string): Promise<SalonDocument[]> {
-    if (!isValidObjectId(userId)) {
-      throw new Error("ID de créateur invalide");
-    }
-    return await Salon.find({ createurId: userId }).exec();
-  }
-
-  // Vérifier si un salon existe déjà par son nom
-  async existsSalonByName(name: string): Promise<boolean> {
-    const count = await Salon.countDocuments({ nom: name });
-    return count > 0;
-  }
-  // Compter le nombre de salons créés par un utilisateur
-  async countSalonsByUser(userId: string): Promise<number> {
-    if (!isValidObjectId(userId)) {
-      throw new Error("ID de créateur invalide");
-    }
-    return await Salon.countDocuments({ createurId: userId });
-  }
-
-  // Récupérer le classement des utilisateurs avec le plus de salons
-  async getUserLeaderboard(limit: number = 10): Promise<any[]> {
-    const leaderboard = await Salon.aggregate([
-      {
-        $group: {
-          _id: "$createurId",
-          salonsCount: { $sum: 1 }
-        }
-      },
-      { $sort: { salonsCount: -1 } },
-      { $limit: limit },
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "user"
-        }
-      },
-      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-      {
-        $project: {
-          userId: "$_id",
-          salonsCount: 1,
-          userName: "$user.nom"
-        }
-      }
-    ]);
-    return leaderboard;
+    return await Salon.find({ skillId }).exec();
   }
 
   // Récupérer les salons avec leurs sessions associées
@@ -129,7 +56,46 @@ async getSalonByName(nom: string): Promise<SalonDocument[]> {
     ]);
   }
 
+  // Récupérer les salons avec leurs sessions associées et filtrer par compétence
+  async getSalonsWithSessionsBySkill(skillId: string): Promise<any[]> {
+    if (!isValidObjectId(skillId)) {
+      throw new Error("ID de compétence invalide");
+    }
+    
+    return await Salon.aggregate([
+      {
+        $match: { skillId: new mongoose.Types.ObjectId(skillId) }
+      },
+      {
+        $lookup: {
+          from: "sessions",
+          localField: "_id",
+          foreignField: "salonId",
+          as: "sessions"
+        }
+      }
+    ]);
+  }
+
   async findByNom(nom: string): Promise<any> {
-    return Salon.findOne({ nom }); // Rechercher un salon par son nom dans la base de données
+    return Salon.findOne({ nom });
+  }
+
+  // Récupérer le leaderboard des utilisateurs basé sur leurs salons
+  async getUserLeaderboard(): Promise<any[]> {
+    return await Salon.aggregate([
+      {
+        $group: {
+          _id: "$createurId",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
   }
 }
