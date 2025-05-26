@@ -1,5 +1,5 @@
 import logger from "./common/utils/logger";
-import app from "./app";
+import { app, server } from "./app";
 import dotenv from "dotenv";
 import connectDB from "./config/database.config";
 import { errorHandler } from "./common/middleware/error-handler.middleware";

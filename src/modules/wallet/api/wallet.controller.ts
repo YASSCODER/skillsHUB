@@ -1,13 +1,33 @@
+
 import { Request, Response } from "express";
 import WalletService from "./wallet.service";
 import Stripe from "stripe";
 import dotenv from "dotenv";
 dotenv.config();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: "2023-10-16",
-}); // Updated API version
-console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
+// Check if the API key exists and log a warning if it doesn't
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.error("WARNING: STRIPE_SECRET_KEY is not defined in environment variables");
+}
+
+// Commenté pour éviter l'erreur d'initialisation
+// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
+//   apiVersion: "2023-10-16",
+// });
+// console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
+
+// Déclaration de stripe sans initialisation pour éviter les erreurs de compilation
+let stripe: any = null;
+
+// Fonction pour initialiser Stripe uniquement lorsque nécessaire
+const getStripeInstance = () => {
+  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2023-10-16",
+    });
+  }
+  return stripe;
+};
 class WalletController {
   static async getAllWallets(req: Request, res: Response) {
     try {
@@ -101,7 +121,7 @@ class WalletController {
         return res.status(400).json({ error: "Cannot top up a deactivated wallet" });
       }
 
-      const session = await stripe.checkout.sessions.create({
+      const session = await getStripeInstance().checkout.sessions.create({
         payment_method_types: ["card"],
         mode: "payment",
         line_items: [
@@ -158,7 +178,7 @@ class WalletController {
     }
 
     try {
-      const session = await stripe.checkout.sessions.retrieve(
+      const session = await getStripeInstance().checkout.sessions.retrieve(
         session_id as string
       );
 
@@ -218,4 +238,4 @@ class WalletController {
   }
 }
 
-export default WalletController;
+export default WalletController; 

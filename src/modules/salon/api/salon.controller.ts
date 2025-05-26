@@ -242,18 +242,40 @@ export class SalonController {
    * Query params acceptés : nom, description, createurNom, dateMin, dateMax, etat, etc.
    */
   async searchSalons(req: Request, res: Response) {
-  try {
-    const { nom } = req.query;
-    const filter: any = {};
-    if (nom) filter.nom = { $regex: nom as string, $options: "i" };
+    try {
+      console.log("Requête de recherche reçue:", req.query);
+      
+      const { nom } = req.query;
+      const filter: any = {};
+      
+      if (nom && typeof nom === 'string') {
+        try {
+          // Utiliser une expression régulière insensible à la casse
+          // Échapper les caractères spéciaux pour éviter les erreurs RegExp
+          const escapedNom = nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          filter.nom = { $regex: escapedNom, $options: "i" };
+        } catch (regexError) {
+          console.error("Erreur lors de la création de l'expression régulière:", regexError);
+          // En cas d'erreur avec l'expression régulière, utiliser une recherche simple
+          filter.nom = nom;
+        }
+      }
 
-    const salons = await Salon.find(filter);
-    res.json(salons);
-  } catch (err) {
-    console.error("Erreur recherche salons :", err);
-    res.status(500).json({ error: "Erreur lors de la récupération du salon" });
+      console.log("Recherche de salons avec filtre:", filter);
+      
+      const salons = await Salon.find(filter).exec();
+      console.log(`${salons.length} salons trouvés`);
+      
+      return res.status(200).json(salons);
+    } catch (err: any) {
+      console.error("Erreur recherche salons :", err);
+      return res.status(500).json({ 
+        error: "Erreur lors de la recherche des salons", 
+        details: err.message,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      });
+    }
   }
-}
 
   // Nouvelle méthode pour récupérer les salons par compétence
   async getSalonsBySkill(req: Request, res: Response) {

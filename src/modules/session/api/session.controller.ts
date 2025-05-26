@@ -33,6 +33,22 @@ export class SessionController {
 
       console.log("Tentative de création de session:", { salonNom, sessionData });
 
+      // Vérifier que tous les champs requis sont présents
+      const missingFields = [];
+      if (!sessionData.type) missingFields.push('type');
+      if (!sessionData.dateDebut) missingFields.push('dateDebut');
+      if (!sessionData.dateFin) missingFields.push('dateFin');
+      if (!sessionData.createurNom) missingFields.push('createurNom');
+
+      if (missingFields.length > 0) {
+        console.log("Données manquantes:", missingFields);
+        return res.status(400).json({ 
+          error: "Données incomplètes", 
+          message: `Les champs suivants sont obligatoires: ${missingFields.join(', ')}`,
+          missingFields
+        });
+      }
+
       // Find salon by name
       const salon = await salonService.findByNom(salonNom);
       if (!salon) {
@@ -46,8 +62,8 @@ export class SessionController {
       return res.status(201).json(session);
     } catch (error: any) {
       console.error("Erreur lors de la création de la session :", error);
-      return res.status(500).json({ 
-        error: "Erreur lors de la création de la session", 
+      return res.status(400).json({ 
+        error: "Validation échouée", 
         message: error.message || "Erreur inconnue" 
       });
     }

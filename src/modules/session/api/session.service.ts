@@ -3,76 +3,89 @@ import Session, { SessionDocument } from "../../../common/models/session.schema"
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import Salon from "../../../common/models/salon.schema";
+import mongoose from "mongoose";
+import { CalendarService } from "../../salon/api/calendar.service";
 
 dayjs.extend(customParseFormat);
 
 export class SessionService {
-  // Créer une session
+  private calendarService: CalendarService;
 
-   async advancedSearch(filters: any): Promise<SessionDocument[]> {
-    const query: any = {};
-    if (filters.salonNom) {
-      // On doit peupler le salon par nom, donc faire une jointure
-      const salon = await Salon.findOne({ nom: filters.salonNom });
-      if (salon) query.salonId = salon._id;
-      else return []; // Aucun salon trouvé, aucun résultat
-    }
-    if (filters.type) query.type = filters.type;
-    if (filters.createurNom) query.createurNom = { $regex: filters.createurNom, $options: 'i' };
-    if (filters.etat) query.etat = filters.etat;
-    if (filters.dateMin || filters.dateMax) {
-      query.dateDebut = {};
-      if (filters.dateMin) query.dateDebut.$gte = new Date(filters.dateMin);
-      if (filters.dateMax) query.dateDebut.$lte = new Date(filters.dateMax);
-    }
-    return Session.find(query)
-      .populate('salonId', 'nom')
-      .sort({ dateDebut: -1 })
-      .exec();
+  constructor() {
+    this.calendarService = new CalendarService();
   }
+
+  // Créer une session
   async createSession(salonId: string, data: Partial<SessionDocument>): Promise<any> {
-    const format = "DD/MM/YYYY HH:mm";
-
-    // Validation des dates
-    if (!data.dateDebut || !data.dateFin) {
-      throw new Error("Les dates de début et de fin sont requises au format 'JJ/MM/AAAA HH:mm'");
+    try {
+      console.log("Données reçues dans createSession:", data);
+      
+      // Vérifier si les données sont au format string et les convertir en Date
+      if (typeof data.dateDebut === 'string') {
+        // Format attendu: "DD/MM/YYYY HH:mm"
+        const [datePart, timePart] = (data.dateDebut as string).split(' ');
+        const [day, month, year] = datePart.split('/');
+        const [hours, minutes] = timePart.split(':');
+        data.dateDebut = new Date(
+          parseInt(year), 
+          parseInt(month) - 1, // Les mois commencent à 0 en JavaScript
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes)
+        );
+      }
+      
+      if (typeof data.dateFin === 'string') {
+        // Format attendu: "DD/MM/YYYY HH:mm"
+        const [datePart, timePart] = (data.dateFin as string).split(' ');
+        const [day, month, year] = datePart.split('/');
+        const [hours, minutes] = timePart.split(':');
+        data.dateFin = new Date(
+          parseInt(year), 
+          parseInt(month) - 1, // Les mois commencent à 0 en JavaScript
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes)
+        );
+      }
+      
+      // Création de la session avec les données converties
+      const newSession = new Session({
+        salonId,
+        type: data.type,
+        dateDebut: data.dateDebut,
+        dateFin: data.dateFin,
+        createurNom: data.createurNom,
+        etat: data.etat || "en attente"
+      });
+      
+      const saved = await newSession.save();
+      
+      // Créer un événement de calendrier correspondant
+      await this.calendarService.createEvent({
+        title: data.type === "chat" ? "Chat: " + (data.title || "Sans titre") : "Meet: " + (data.title || "Sans titre"),
+        salonId,
+        sessionId: saved._id,
+        start: saved.dateDebut,
+        end: saved.dateFin,
+        description: data.description || "",
+        createdBy: data.createurId,
+        attendees: data.participants || [],
+        color: data.type === "chat" ? "#4a6ee0" : "#e06e4a"
+      });
+      
+      return {
+        id: saved._id,
+        type: saved.type,
+        dateDebut: saved.dateDebut,
+        dateFin: saved.dateFin,
+        createurNom: saved.createurNom,
+        etat: saved.etat
+      };
+    } catch (error) {
+      console.error("Erreur dans createSession:", error);
+      throw error;
     }
-
-    const dateDebut = dayjs(data.dateDebut, format, true);
-    const dateFin = dayjs(data.dateFin, format, true);
-    const now = dayjs();
-
-    if (!dateDebut.isValid() || !dateFin.isValid()) {
-      throw new Error("Le format des dates est invalide. Utilisez 'JJ/MM/AAAA HH:mm'");
-    }
-
-    if (dateDebut.isBefore(now, "minute")) {
-      throw new Error("La date de début doit être aujourd'hui ou plus tard");
-    }
-
-    if (!dateFin.isAfter(dateDebut)) {
-      throw new Error("La date de fin doit être après la date de début");
-    }
-
-    // Création de la session
-    const session = new Session({
-      ...data,
-      salonId, // ID du salon associé
-      dateDebut: dateDebut.toDate(),
-      dateFin: dateFin.toDate(),
-      createurNom: data.createurNom,
-    });
-
-    const saved = await session.save();
-
-    return {
-      id: saved._id,
-      type: saved.type,
-      dateDebut: dayjs(saved.dateDebut).format(format),
-      dateFin: dayjs(saved.dateFin).format(format),
-      createurNom: saved.createurNom,
-      etat: saved.etat,
-    };
   }
 
   // Trouver les sessions par utilisateur
@@ -203,13 +216,6 @@ export class SessionService {
       throw error;
     }
   }
-
-  // Créer une session
-  async createSession(sessionData: Partial<SessionDocument>): Promise<SessionDocument> {
-    const session = new Session(sessionData);
-    return await session.save();
-  }
-
   // Récupérer les sessions par compétence
   async getSessionsBySkill(skillId: string): Promise<SessionDocument[]> {
     if (!isValidObjectId(skillId)) {
@@ -224,5 +230,50 @@ export class SessionService {
       throw new Error("ID de salon ou de compétence invalide");
     }
     return await Session.find({ salonId, skillId }).exec();
+  }
+
+  // Recherche avancée de sessions avec filtres
+  async advancedSearch(filters: any): Promise<SessionDocument[]> {
+    try {
+      const query: any = {};
+      
+      // Appliquer les filtres si présents
+      if (filters.type) {
+        query.type = filters.type;
+      }
+      
+      if (filters.etat) {
+        query.etat = filters.etat;
+      }
+      
+      if (filters.createurNom) {
+        query.createurNom = { $regex: new RegExp(filters.createurNom, 'i') };
+      }
+      
+      if (filters.salonId) {
+        query.salonId = filters.salonId;
+      }
+      
+      // Filtres de date
+      if (filters.dateDebut || filters.dateFin) {
+        query.dateDebut = {};
+        
+        if (filters.dateDebut) {
+          query.dateDebut.$gte = new Date(filters.dateDebut);
+        }
+        
+        if (filters.dateFin) {
+          query.dateFin = { $lte: new Date(filters.dateFin) };
+        }
+      }
+      
+      return await Session.find(query)
+        .populate('salonId', 'nom')
+        .sort({ dateDebut: 1 })
+        .exec();
+    } catch (error) {
+      console.error("Erreur dans advancedSearch:", error);
+      throw error;
+    }
   }
 }

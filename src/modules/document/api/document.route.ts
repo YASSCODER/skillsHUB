@@ -29,7 +29,10 @@ router.get(
 // -------------------------------------------------------------------
 
 // Ensure uploads directory exists
-const uploadDir = ensureUploadsDir();
+const uploadDir = path.join(__dirname, '../../../../uploads');
+
+// Create uploads directory if it doesn't exist
+ensureUploadsDir();
 
 // Configure multer storage
 const storage = multer.diskStorage({
@@ -37,23 +40,55 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueSuffix + ext);
+  }
 });
 
 // Configure multer upload
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 500 * 1024 * 1024 }, // Augmenté à 500MB
   fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype === "application/pdf" ||
-      file.originalname.toLowerCase().endsWith(".pdf")
-    ) {
+    // Accept PDF files, videos, and other common document types
+    const allowedTypes = [
+      "application/pdf", 
+      "application/msword", 
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "video/mp4",
+      "video/quicktime",
+      "video/x-msvideo",
+      "video/x-ms-wmv"
+    ];
+    
+    // Accepter tous les types de fichiers vidéo courants
+    if (allowedTypes.includes(file.mimetype) || 
+        file.originalname.toLowerCase().endsWith('.pdf') ||
+        file.originalname.toLowerCase().endsWith('.doc') ||
+        file.originalname.toLowerCase().endsWith('.docx') ||
+        file.originalname.toLowerCase().endsWith('.xls') ||
+        file.originalname.toLowerCase().endsWith('.xlsx') ||
+        file.originalname.toLowerCase().endsWith('.ppt') ||
+        file.originalname.toLowerCase().endsWith('.pptx') ||
+        file.originalname.toLowerCase().endsWith('.jpg') ||
+        file.originalname.toLowerCase().endsWith('.jpeg') ||
+        file.originalname.toLowerCase().endsWith('.png') ||
+        file.originalname.toLowerCase().endsWith('.gif') ||
+        file.originalname.toLowerCase().endsWith('.mp4') ||
+        file.originalname.toLowerCase().endsWith('.mov') ||
+        file.originalname.toLowerCase().endsWith('.avi') ||
+        file.originalname.toLowerCase().endsWith('.wmv')) {
       cb(null, true);
     } else {
-      cb(new Error("Only PDF files are allowed"));
+      cb(new Error("Format de fichier non supporté. Formats acceptés: PDF, Word, Excel, PowerPoint, images et vidéos."));
     }
   },
 });
@@ -68,13 +103,17 @@ router.get(
 );
 
 // GET all documents for a specific salon
-router.get(
-  "/salon/:salonId",
-  catchAsync(async (req: Request, res: Response) => {
+router.get('/salon/:salonId', catchAsync(async (req: Request, res: Response) => {
+  try {
+    console.log(`Fetching documents for salon: ${req.params.salonId}`);
     const documents = await Document.find({ salonId: req.params.salonId });
+    console.log(`Found ${documents.length} documents`);
     res.json(documents);
-  })
-);
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    res.status(500).json({ error: "Failed to fetch documents", details: error instanceof Error ? error.message : String(error) });
+  }
+}));
 
 // GET document by ID
 router.get(
@@ -90,51 +129,71 @@ router.get(
 
 // POST upload document for a specific salon
 router.post(
-  "/upload/:salonId",
-  upload.single("document"),
+  '/upload/:salonId',
+  (req, res, next) => {
+    console.log("Upload request received for salonId:", req.params.salonId);
+    console.log("Request body:", req.body);
+    console.log("Request files:", req.files);
+    
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        console.error("Multer error:", err);
+        return res.status(400).json({ error: err.message });
+      }
+      next();
+    });
+  },
   catchAsync(async (req: Request, res: Response) => {
+    console.log("File uploaded:", req.file);
+    
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const { filename, originalname, mimetype, size, path: filePath } = req.file;
-    const url = `/uploads/${filename}`;
-    const salonId = req.params.salonId;
+    try {
+      const { filename, originalname, mimetype, size, path: filePath } = req.file;
+      const url = `/uploads/${filename}`;
+      const salonId = req.params.salonId;
+      
+      console.log("Creating document with:", {
+        filename, originalname, mimetype, size, path: filePath, url, salonId
+      });
 
-    // Create document in database
-    const document = new Document({
-      filename,
-      originalname,
-      mimetype,
-      size,
-      path: filePath,
-      url,
-      salonId,
-    });
-
-    await document.save();
-
-    res.status(201).json({
-      success: true,
-      document,
-    });
-  })
-);
-router.get(
-  "/salon/:salonId/search",
-  catchAsync(async (req: Request, res: Response) => {
-    const { salonId } = req.params;
-    const { name } = req.query;
-    if (!name || typeof name !== "string") {
-      return res.status(400).json({ error: "Le champ 'name' est requis." });
+      // Create document in database
+      const document = new Document({
+        filename,
+        originalname,
+        mimetype,
+        size,
+        path: filePath,
+        url,
+        salonId
+      });
+      
+      const savedDoc = await document.save();
+      console.log("Document saved successfully:", savedDoc);
+      
+      res.status(201).json({
+        success: true,
+        document: savedDoc
+      });
+    } catch (error) {
+      console.error("Error saving document:", error);
+      res.status(500).json({ error: "Failed to save document", details: error instanceof Error ? error.message : String(error) });
     }
-    const docs = await Document.find({
-      salonId,
-      originalname: { $regex: name, $options: "i" },
-    });
-    res.json(docs);
   })
-);
+);router.get('/salon/:salonId/search', catchAsync(async (req: Request, res: Response) => {
+  const { salonId } = req.params;
+  const { name } = req.query;
+  if (!name || typeof name !== "string") {
+    return res.status(400).json({ error: "Le champ 'name' est requis." });
+  }
+  const docs = await Document.find({
+    salonId,
+    originalname: { $regex: name, $options: 'i' }
+  });
+  res.json(docs);
+}));
 
 // DELETE document by ID
 router.delete(
@@ -244,35 +303,31 @@ router.delete(
   })
 );
 
-// Route pour ajouter une étoile à un document PDF
-router.post(
-  "/:documentId/etoile",
-  catchAsync(
-    async (
-      req: { params: { documentId: any } },
-      res: {
-        status: (arg0: number) => {
-          (): any;
-          new (): any;
-          json: { (arg0: { error: string }): void; new (): any };
-        };
-        json: (arg0: { etoiles: number }) => void;
-      }
-    ) => {
-      try {
-        const { documentId } = req.params;
-        const document = await Document.findById(documentId);
-        if (!document)
-          return res.status(404).json({ error: "Document not found" });
-        document.etoiles = (document.etoiles || 0) + 1;
-        await document.save();
-        res.json({ etoiles: document.etoiles });
-      } catch (err) {
-        res.status(500).json({ error: "Erreur serveur" });
-      }
+// Route pour ajouter une étoile à un document PDF (limitée à 5 étoiles maximum)
+router.post('/:documentId/etoile', catchAsync(async (req: Request, res: Response) => {
+  try {
+    const { documentId } = req.params;
+    const document = await Document.findById(documentId);
+    
+    if (!document) {
+      return res.status(404).json({ error: "Document not found" });
     }
-  )
-);
+    
+    // Initialiser etoiles à 0 si undefined
+    document.etoiles = document.etoiles || 0;
+    
+    // Limiter à 5 étoiles maximum
+    if (document.etoiles < 5) {
+      document.etoiles += 1;
+      await document.save();
+    }
+    
+    res.json({ etoiles: document.etoiles });
+  } catch (err) {
+    console.error("Erreur lors de l'ajout d'étoile:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+}));
 
 // Définir le type ReactionType
 type ReactionType = "like" | "success" | "love";
@@ -318,19 +373,34 @@ router.post(
       if (!commentaire)
         return res.status(404).json({ error: "Comment not found" });
 
-      if (!commentaire.reactions) {
-        commentaire.reactions = { like: [], success: [], love: [] };
-      }
-      if (!commentaire.reactions[reaction]) {
-        commentaire.reactions[reaction] = [];
-      }
+  if (!commentaire.reactions) {
+    commentaire.reactions = { like: [], success: [], love: [] };
+  }
 
-      const idx = commentaire.reactions[reaction].indexOf(userId);
-      if (idx === -1) {
-        commentaire.reactions[reaction].push(userId);
-      } else {
-        commentaire.reactions[reaction].splice(idx, 1);
+  // Vérifier si l'utilisateur a déjà réagi avec un autre type
+  const hasOtherReaction = validReactions.some(type => 
+    type !== reaction && commentaire.reactions?.[type]?.includes(userId)
+  );
+
+  // Si l'utilisateur a déjà une autre réaction, supprimer cette réaction
+  if (hasOtherReaction) {
+    validReactions.forEach(type => {
+      if (type !== reaction) {
+        const idx = commentaire.reactions?.[type]?.indexOf(userId) ?? -1;
+        if (idx !== -1) {
+          commentaire.reactions?.[type]?.splice(idx, 1);
+        }
       }
+    });
+  }
+
+  // Ajouter ou supprimer la réaction actuelle
+  const idx = commentaire.reactions[reaction].indexOf(userId);
+  if (idx === -1) {
+    commentaire.reactions[reaction].push(userId);
+  } else {
+    commentaire.reactions[reaction].splice(idx, 1);
+  }
 
       await document.save();
 
@@ -352,8 +422,8 @@ router.post(
 
 // POST upload image for a specific salon
 router.post(
-  "/upload-image/:salonId",
-  upload.single("image"),
+  '/upload-image/:salonId',
+  upload.single('file'),
   catchAsync(async (req: Request, res: Response) => {
     if (!req.file) {
       return res.status(400).json({ error: "No image uploaded" });
