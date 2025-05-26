@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+
 const PORT = process.env.PORT || 5000;
 const MONGO_URI =
   process.env.MONGO_URI || "mongodb://localhost:27017/myDatabase";
@@ -28,3 +29,7 @@ const startServer = async () => {
 };
 
 startServer();
+/*function cors(): any {
+  throw new Error("Function not implemented.");
+}*/ 
+
