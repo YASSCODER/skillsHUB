@@ -2,6 +2,9 @@ import Badge from "../../../common/models/types/badge.schema";
 import { IBadge } from "../../../common/models/interface/badge.interface";
 import  Challenge  from "../../../common/models/types/challenge.schema";
 import { BadgeEnum } from "../../../common/enum/badge.enum";
+import userSchema from "../../../common/models/types/user.schema";
+import { sendCertificateEmail } from "../../../common/utils/mailService";
+import badgeSchema from "../../../common/models/types/badge.schema";
 //import { BadgeEnum } from "../enums/badge.enum";
 
 const badges: IBadge[] = [];
@@ -20,30 +23,36 @@ export class BadgeService {
     try {
       // Vérifier si le challenge existe
       const challenge = await Challenge.findById(challengeId);
-      if (!challenge) {
-        throw new Error("Challenge non trouvé");
-      }
-
-      // Convertir la note sur 20 en pourcentage
-      const percentage = (score / 20) * 100;
-
-      // Calculer le score cumulé total de l'utilisateur
-      const userBadges = await Badge.find({ userId });
-      console.log("🎯 Badges récupérés depuis MongoDB:", userBadges);
-      const totalPercentage = userBadges.reduce((acc, b) => acc + b.percentage, 0) + percentage;
-
-      // Déterminer le badge en fonction du total
-      let badgeType = BadgeEnum.DEBUTANT;
-      let badgeName = "Aucun badge";
-
-      if (totalPercentage >= 170) {
+if (!challenge) {
+  throw new Error("Challenge non trouvé");
+}
+  
+      const percentage = score;
+  
+      // Déterminer le badge uniquement en fonction du score actuel
+      let badgeType: BadgeEnum;
+      let badgeName: string;
+  
+      if (percentage > 200) {
         badgeType = BadgeEnum.EXPERT;
         badgeName = "Badge d'Or";
-      } else if (totalPercentage >= 100) {
+      } else if (percentage >= 170 && percentage <= 200) {
+        badgeType = BadgeEnum.EXPERT;
+        badgeName = "Badge d'Or";
+      } else if (percentage >= 100 && percentage < 170) {
         badgeType = BadgeEnum.INTERMIDIAIRE;
         badgeName = "Badge d'Argent";
+      } else {
+        badgeType = BadgeEnum.DEBUTANT;
+        badgeName = "Badge de Bronze";
       }
 
+      
+  
+      // 🔁 Calculer le score total cumulé UNIQUEMENT pour le certificat
+      const userBadges = await Badge.find({ userId });
+      const totalPercentage = userBadges.reduce((acc, b) => acc + b.percentage, 0) + percentage;
+  
       // Créer et sauvegarder le badge
       const badge = new Badge({
         userId,
@@ -55,14 +64,24 @@ export class BadgeService {
         awardedAt: new Date(),
         imageUrl: getBadgeImageUrl(badgeType),
       });
-
+  
       await badge.save();
-
+  
       // Vérifier si l'utilisateur atteint le certificat (1000%)
       if (totalPercentage >= 1000) {
         console.log(`🎉 L'utilisateur ${userId} a obtenu un certificat !`);
+  
+        const certificateImageUrl = `https://ui-avatars.com/api/?name=Certificat&background=ffcc00&color=000&bold=true&format=png`;
+  
+        badge.certificateImageUrl = certificateImageUrl;
+        await badge.save();
+  
+        const user = await userSchema.findById(userId);
+        if (user && user.email) {
+          await sendCertificateEmail(user.email, user.fullName || 'Utilisateur');
+        }
       }
-
+  
       return badge;
     } catch (error) {
       console.error("Erreur dans awardBadge:", error);
@@ -70,9 +89,11 @@ export class BadgeService {
     }
   }
 
-  async findBadgesByUser(userId: string): Promise<IBadge[]> {
-    return await Badge.find({ userId });
-    }
+  async findBadgesByUser(userId: string) {
+    return await badgeSchema.find({ userId })
+      .populate("challengeId", "title")
+      .populate("userId", "fullName email");
+  }
 
     async getLeaderboard(): Promise<
   { userId: string; score: number; badgeCount: number }[]
@@ -117,8 +138,10 @@ async updateBadge(id: string, updateData: Partial<IBadge>): Promise<IBadge | nul
   return updatedBadge;
 }  
 
-async findAll(): Promise<IBadge[]> {
-  return await Badge.find();
+async findAll() {
+  return await badgeSchema.find()
+    .populate("userId", "fullName email")
+    .populate("challengeId", "title");
 }
 
 async delete(id: string): Promise<boolean> {

@@ -82,6 +82,7 @@ class UserController {
       res.status(500).json({ error: "Failed to delete user" });
     }
   }
+  
 }
 
 export default UserController;
