@@ -12,7 +12,7 @@ export class AuthService {
   constructor(private readonly userService: UserService) {}
 
   register = async (userData: RegisterDto) => {
-    const { email, password, fullName } = userData;
+    const { email, password, fullName, skills = [] } = userData;
 
     const userExists = await this.userService.findUserByEmail(email);
     if (userExists) {
@@ -24,14 +24,14 @@ export class AuthService {
       throw new Error("Client role not found");
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
     const userRole = clientRole._id as string;
 
     const data = {
       fullName,
       email: email,
-      password: hashedPassword,
+      password,
       role: userRole,
+      skills,
     };
 
     const user = await this.userService.createUser(data);
@@ -40,6 +40,8 @@ export class AuthService {
 
   login = async (email: string, password: string) => {
     const user = await this.userService.findUserByEmail(email);
+
+    const isMatched = user && (await bcrypt.compare(password, user.password));
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new Error("Invalid credentials");
@@ -56,12 +58,15 @@ export class AuthService {
       expiresIn: "1h",
     });
 
+    console.log("Generated Token:", token);
+
     const data = {
       user: {
         id: user._id,
         email: user.email,
         fullName: user.fullName,
         role: userRole.title,
+        skills: user.skills || [],
       },
       token: token,
     };
