@@ -13,7 +13,7 @@ class Logger {
     this.printLog("WARN", message);
   }
 
-  error(message: string) {
+  error(message: string, error: unknown) {
     this.printLog("ERROR", message);
   }
 

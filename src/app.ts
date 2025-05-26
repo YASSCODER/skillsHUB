@@ -5,8 +5,9 @@ import dotenv from "dotenv";
 import path from "path";
 import appRegisterModules from "./app.register-module";
 import salonsRouter from "./modules/salon/api/salon.route";
-import sessionsRoutes from './modules/session/api/session.route';
+import sessionsRoutes from "./modules/session/api/session.route";
 import documentRoute from "./modules/document/api/document.route";
+import { errorHandler } from "./common/middleware/error-handler.middleware";
 
 dotenv.config();
 
@@ -14,9 +15,9 @@ const app: Application = express();
 
 app.use(
   cors({
-    origin: 'http://localhost:4200',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: "http://localhost:4200",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
@@ -33,15 +34,6 @@ app.get("/api/test", (req: Request, res: Response) => {
   res.status(200).json({ message: "API is working!" });
 });
 
-app.use('/api/salon', salonsRouter);
-app.use('/api/sessions', sessionsRoutes);
-app.use("/api/document", documentRoute);
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  logger.error(`Error: ${err.message}`);
-  res.status(500).json({ error: "Internal Server Error" });
-});
-
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 export default app;
