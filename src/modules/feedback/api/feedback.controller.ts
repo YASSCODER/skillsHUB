@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
 import { FeedbackService } from "./feedback.service";
+import UserService from "../../user/api/user.service";
 
 const feedbackService = new FeedbackService();
+const userService = new UserService();
 
 export class FeedbackController {
-   async createFeedback(req: Request, res: Response) {
+  async createFeedback(req: Request, res: Response) {
     try {
       const feedback = await feedbackService.create(req.body);
       res.status(201).json(feedback);
@@ -13,7 +15,7 @@ export class FeedbackController {
     }
   }
 
-   async getAllFeedbacks(req: Request, res: Response) {
+  async getAllFeedbacks(req: Request, res: Response) {
     try {
       const feedbacks = await feedbackService.findAll();
       res.status(200).json(feedbacks);
@@ -22,7 +24,7 @@ export class FeedbackController {
     }
   }
 
-   async getFeedbackById(req: Request, res: Response) {
+  async getFeedbackById(req: Request, res: Response) {
     try {
       const feedback = await feedbackService.findById(req.params.id);
       if (!feedback) {
@@ -34,7 +36,7 @@ export class FeedbackController {
     }
   }
 
-   async updateFeedback(req: Request, res: Response) {
+  async updateFeedback(req: Request, res: Response) {
     try {
       const feedback = await feedbackService.update(req.params.id, req.body);
       if (!feedback) {
@@ -66,8 +68,7 @@ export class FeedbackController {
       res.status(500).json({ message: "Erreur lors du calcul de la note moyenne", error });
     }
   }
-  
-  
+
   async getTopRatedUsers(req: Request, res: Response) {
     try {
       const limit = parseInt(req.query.limit as string) || 5;
@@ -75,6 +76,16 @@ export class FeedbackController {
       res.status(200).json(topUsers);
     } catch (error) {
       res.status(500).json({ message: "Erreur lors de la récupération des meilleurs utilisateurs", error });
+    }
+  }
+
+  async getUsernamebyid(req: Request, res: Response) {
+    try {
+      const fullName = await feedbackService.getUsernameById(req.params.id);
+      if (!fullName) return res.status(404).json({ error: "User not found" });
+      res.json({ fullName });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user" });
     }
   }
 }

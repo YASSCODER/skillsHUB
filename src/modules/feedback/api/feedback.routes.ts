@@ -14,5 +14,8 @@ router.get("/user/:userId/average", catchAsync(feedbackController.getAverageRati
 router.get("/top-rated", catchAsync(feedbackController.getTopRatedUsers));
 router.get("/:id", catchAsync(feedbackController.getFeedbackById));
 
+// ✅ Nouvelle route pour récupérer le nom de l'utilisateur à partir de son ID
+router.get("/user/:id/username", catchAsync(feedbackController.getUsernamebyid));
+
 
 export default router;

@@ -1,18 +1,20 @@
-import mongoose from "mongoose";
-import { BaseSchema } from "../base-model.schema";
-import { IBadge } from "../interface/badge.interface";
-import { BadgeEnum } from "../../enum/badge.enum";
+  import mongoose from "mongoose";
+  import { BaseSchema } from "../base-model.schema";
+  import { IBadge } from "../interface/badge.interface";
+  import { BadgeEnum } from "../../enum/badge.enum";
 
-export const BadgeSchema = new mongoose.Schema<IBadge>({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  challengeId: { type: String, required: true },
-  name: { type: String, required: true },
-  type: { type: String, enum: Object.values(BadgeEnum), required: true },
-  percentage: { type: Number, required: true },
-  totalPercentage: { type: Number, required: true },
-  awardedAt: { type: Date, default: Date.now },
-  imageUrl: { type: String },
-}, { timestamps: true }); // <-- ICI
+  export const BadgeSchema = new mongoose.Schema<IBadge>({
+    
 
-BadgeSchema.add(BaseSchema);
-export default mongoose.model<IBadge>("Badge", BadgeSchema);
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    challengeId: { type: mongoose.Schema.Types.ObjectId, ref: "Challenge", required: true },  name: { type: String, required: true },
+    type: { type: String, enum: Object.values(BadgeEnum), required: true },
+    percentage: { type: Number, required: true },
+    totalPercentage: { type: Number, required: true },
+    awardedAt: { type: Date, default: Date.now },
+    imageUrl: { type: String },
+    certificateImageUrl: { type: String },
+  }, { timestamps: true }); 
+
+  BadgeSchema.add(BaseSchema);
+  export default mongoose.model<IBadge>("Badge", BadgeSchema);
