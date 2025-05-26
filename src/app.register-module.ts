@@ -11,10 +11,10 @@ import RoleModule from "./modules/roles/role.module";
 import AuthModule from "./modules/auth/auth.modules";
 import WalletModule from "./modules/wallet/wallet.module";
 import RewardModule from "./modules/reward/reward.module";
-import SalonModule from  "./modules/salon/salon.module"; 
-import SessionModule from  "./modules/session/session.module"; 
+import SalonModule from "./modules/salon/salon.module";
+import SessionModule from "./modules/session/session.module";
 import EventModule from "./modules/Event/event.module";
-
+import MarketplaceModule from "./modules/Marketplace/Marketplace.module";
 
 const modules = [
   UserModule,
@@ -33,6 +33,7 @@ const modules = [
   ForumModel,
   CommunityModule,
   EventModule,
+  MarketplaceModule,
 ];
 
 const appRegisterModules = (app: Application): void => {
