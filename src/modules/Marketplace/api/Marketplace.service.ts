@@ -6,61 +6,54 @@ import {ISkill} from "../../../common/models/interface/skills.interface";
 
 class MarketplaceService {
   static async createSkill(skillData: any) {
-    let categoryId = skillData.category;
-
-    // Vérifier si la catégorie est un nom plutôt qu'un ID
-    if (categoryId && typeof categoryId === 'string' && !mongoose.Types.ObjectId.isValid(categoryId)) {
-      console.log(`Recherche de la catégorie par nom: "${categoryId}"`);
-      // Rechercher la catégorie par son nom
-      const categoryByName = await CategorySchema.findOne({ name: { $regex: new RegExp(`^${categoryId}$`, 'i') } });
-
-      if (categoryByName) {
-        console.log(`Catégorie trouvée par nom: ${categoryByName.name} avec ID: ${categoryByName._id}`);
-        categoryId = categoryByName._id;
-      } else {
-        // Si la catégorie n'existe pas, créer une nouvelle catégorie
-        console.log(`Création d'une nouvelle catégorie: ${categoryId}`);
-        const newCategory = await CategorySchema.create({
-          name: categoryId,
-          description: `Catégorie pour ${categoryId}`
-        });
-        categoryId = newCategory._id;
-        console.log(`Nouvelle catégorie créée avec ID: ${categoryId}`);
+    try {
+      // Vérifier et récupérer la catégorie par son nom ou son ID
+      let categoryId = skillData.category;
+      
+      // Si la catégorie est fournie comme une chaîne qui n'est pas un ObjectId valide,
+      // on suppose que c'est le nom de la catégorie et on cherche son ID
+      if (typeof categoryId === 'string' && !mongoose.Types.ObjectId.isValid(categoryId)) {
+        const category = await CategorySchema.findOne({ name: categoryId });
+        if (!category) {
+          throw new Error(`Category not found with name: ${categoryId}`);
+        }
+        categoryId = category._id;
       }
+      
+      // Vérifier que l'utilisateur existe
+      if (!skillData.userId || !mongoose.Types.ObjectId.isValid(skillData.userId)) {
+        throw new Error(`Invalid user ID: ${skillData.userId}`);
+      }
+      
+      const user = await UserModel.findById(skillData.userId);
+      if (!user) {
+        throw new Error(`User not found with ID: ${skillData.userId}`);
+      }
+
+      // Créer le skill
+      const newSkill = await SkillsSchema.create({
+        name: skillData.name,
+        description: skillData.description || `Compétence en ${skillData.name}`,
+        category: categoryId,
+        userId: skillData.userId,
+        users: skillData.users || [skillData.userId]
+      });
+
+      // Mettre à jour l'utilisateur avec le nouveau skill
+      user.skills.push(newSkill._id as mongoose.Types.ObjectId);
+      await user.save();
+
+      // Mettre à jour la catégorie avec le nouveau skill
+      await CategorySchema.findByIdAndUpdate(
+        categoryId,
+        { $addToSet: { skills: newSkill._id } }
+      );
+
+      return newSkill;
+    } catch (error) {
+      console.error("Error creating skill:", error);
+      throw error;
     }
-
-    // 1. Vérifier que l'ID de la catégorie existe
-    const categoryExists = await CategorySchema.findById(categoryId);
-    if (!categoryExists) {
-      throw new Error(`Category not found with ID: ${categoryId}`);
-    }
-
-    // 2. Vérifier que l'utilisateur existe
-    const user = await UserModel.findById(skillData.userId);
-    if (!user) {
-      throw new Error(`User not found with ID: ${skillData.userId}`);
-    }
-
-    // 3. Créer le skill (liaison avec la catégorie + userId)
-    const newSkill = await SkillsSchema.create({
-      name: skillData.name,
-      description: skillData.description || `Compétence en ${skillData.name}`, // Ajout d'une description par défaut si non fournie
-      category: categoryId, // Utiliser l'ID de catégorie résolu
-      userId: skillData.userId,
-      users: skillData.users || [skillData.userId] // Ajouter l'utilisateur créateur par défaut
-    });
-
-    // 4. Mettre à jour l'utilisateur avec le nouveau skill
-    user.skills.push(newSkill._id as mongoose.Types.ObjectId);
-    await user.save();
-
-    // 5. Mettre à jour la catégorie avec le nouveau skill
-    await CategorySchema.findByIdAndUpdate(
-      categoryId,
-      { $addToSet: { skills: newSkill._id } }
-    );
-
-    return newSkill;
   }
   /*  static async getAllSkills()
     {return await SkillsSchema.find(); }
