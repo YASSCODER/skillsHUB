@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import logger from "../utils/logger";
 
 // Custom error class for specific errors (optional)
 export class AppError extends Error {
@@ -11,29 +12,28 @@ export class AppError extends Error {
 }
 
 export function errorHandler(
-  err: unknown, // Correct type for error handler
+  err: unknown, 
   req: Request,
   res: Response,
   next: NextFunction
 ): Response {
-  // Log the error to the terminal
-  console.error(err);
+  logger.error(
+    "Error occurred",
+    err instanceof Error ? err : new Error(String(err))
+  );
 
-  // If the error is an instance of AppError, use its status and message
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
       error: err.message,
     });
   }
 
-  // Handle entity not found (example for TypeORM or custom logic)
   if (err instanceof Error && err.name === "EntityNotFoundError") {
     return res.status(404).json({
       error: "Entity not found",
     });
   }
 
-  // Fallback for unhandled errors
   return res.status(500).json({
     error: "Internal Server Error",
     details:
