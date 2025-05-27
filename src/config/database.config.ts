@@ -4,23 +4,23 @@ import logger from "../common/utils/logger";
 
 dotenv.config();
 
-// Utiliser l'URI de MongoDB Atlas ou une valeur par défaut pour MongoDB local
-const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/skillsHub";
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  throw new Error("⚠️ MONGO_URI is not defined in .env file");
+}
 
 const connectDB = async () => {
   try {
-    // Utiliser 127.0.0.1 au lieu de localhost pour éviter les problèmes IPv6
-    const uri = MONGO_URI.replace('localhost', '127.0.0.1');
-    
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000, // Augmenter le timeout
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
     });
 
-    logger.info("[Database] ✅ Connected to MongoDB");
+    logger.info("[Database] ✅ Connected to MongoDB Atlas");
   } catch (err) {
     logger.error("[Database] ❌ Connection error: " + err);
     process.exit(1);
   }
 };
 
-export default connectDB;
+export default connectDB;
