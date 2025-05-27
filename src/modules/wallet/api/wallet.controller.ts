@@ -381,6 +381,101 @@ class WalletController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  // Purchase challenge with iMoney
+  static async purchaseChallenge(req: Request, res: Response) {
+    const { userId, challengeId, imoneyPrice } = req.body;
+
+    console.log("=== PURCHASE CHALLENGE CONTROLLER START ===");
+    console.log("purchaseChallenge - Input:", { userId, challengeId, imoneyPrice });
+
+    if (!userId || !challengeId || !imoneyPrice) {
+      return res.status(400).json({ error: "Missing required fields: userId, challengeId, imoneyPrice" });
+    }
+
+    try {
+      const result = await WalletService.purchaseChallenge(userId, challengeId, imoneyPrice);
+
+      console.log("purchaseChallenge - Purchase successful:", {
+        challengeId,
+        amountDeducted: imoneyPrice,
+        newBalance: result.transaction.newBalance,
+      });
+
+      res.status(200).json({
+        message: "Challenge purchased successfully",
+        challengeId,
+        amountDeducted: imoneyPrice,
+        newBalance: result.transaction.newBalance,
+        wallet: result.wallet,
+        transaction: result.transaction
+      });
+    } catch (error: any) {
+      console.error("purchaseChallenge - Error:", error.message);
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  // Purchase skill with iMoney
+  static async purchaseSkill(req: Request, res: Response) {
+    const { userId, skillId, imoneyPrice } = req.body;
+
+    console.log("=== PURCHASE SKILL CONTROLLER START ===");
+    console.log("purchaseSkill - Input:", { userId, skillId, imoneyPrice });
+
+    if (!userId || !skillId || !imoneyPrice) {
+      return res.status(400).json({ error: "Missing required fields: userId, skillId, imoneyPrice" });
+    }
+
+    try {
+      const result = await WalletService.purchaseSkill(userId, skillId, imoneyPrice);
+
+      console.log("purchaseSkill - Purchase successful:", {
+        skillId,
+        amountDeducted: imoneyPrice,
+        newBalance: result.transaction.newBalance,
+      });
+
+      res.status(200).json({
+        message: "Skill purchased successfully",
+        skillId,
+        amountDeducted: imoneyPrice,
+        newBalance: result.transaction.newBalance,
+        wallet: result.wallet,
+        transaction: result.transaction
+      });
+    } catch (error: any) {
+      console.error("purchaseSkill - Error:", error.message);
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  // Manual endpoint to update all skills and challenges to have imoneyPrice = 65
+  static async updateAllPricesToSixtyFive(req: Request, res: Response) {
+    console.log("=== MANUAL UPDATE ENDPOINT CALLED ===");
+
+    try {
+      const result = await WalletService.updateAllPricesToSixtyFive();
+
+      console.log("Manual update completed successfully:", result);
+
+      res.status(200).json({
+        message: "Successfully updated all skills and challenges to 65 iMoney",
+        result: {
+          skillsUpdated: result.skillsUpdated,
+          challengesUpdated: result.challengesUpdated,
+          totalSkills: result.totalSkills,
+          totalChallenges: result.totalChallenges
+        }
+      });
+    } catch (error: any) {
+      console.error("Manual update failed:", error.message);
+      res.status(500).json({
+        error: "Failed to update prices",
+        details: error.message
+      });
+    }
+  }
 }
 
 export default WalletController;

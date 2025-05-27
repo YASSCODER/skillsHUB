@@ -195,6 +195,154 @@ static async topUpImoneyAlternative(userId: string, imoneyValue: number) {
 
   return finalWallet;
 }
+
+// Manual update: Set imoneyPrice to 65 for all skills and challenges
+static async updateAllPricesToSixtyFive() {
+  console.log("=== MANUAL UPDATE: SET ALL PRICES TO 65 ===");
+
+  try {
+    // Import the schemas
+    const SkillsSchema = (await import('../../../common/models/types/skills.schema')).default;
+    const ChallengeSchema = (await import('../../../common/models/types/challenge.schema')).default;
+
+    // Update all skills to have imoneyPrice = 65
+    const skillsResult = await SkillsSchema.updateMany(
+      {}, // Empty filter = all documents
+      { $set: { imoneyPrice: 65 } }
+    );
+
+    console.log(`Skills updated: ${skillsResult.modifiedCount} documents`);
+
+    // Update all challenges to have imoneyPrice = 65
+    const challengesResult = await ChallengeSchema.updateMany(
+      {}, // Empty filter = all documents
+      { $set: { imoneyPrice: 65 } }
+    );
+
+    console.log(`Challenges updated: ${challengesResult.modifiedCount} documents`);
+
+    // Get totals for verification
+    const totalSkills = await SkillsSchema.countDocuments();
+    const totalChallenges = await ChallengeSchema.countDocuments();
+
+    console.log("=== UPDATE COMPLETED ===");
+    console.log(`Total Skills: ${totalSkills}`);
+    console.log(`Total Challenges: ${totalChallenges}`);
+
+    return {
+      skillsUpdated: skillsResult.modifiedCount,
+      challengesUpdated: challengesResult.modifiedCount,
+      totalSkills,
+      totalChallenges
+    };
+
+  } catch (error) {
+    console.error("Error updating prices:", error);
+    throw error;
+  }
+}
+
+// Purchase challenge with iMoney
+static async purchaseChallenge(userId: string, challengeId: string, imoneyPrice: number) {
+  console.log("=== PURCHASE CHALLENGE START ===");
+  console.log("purchaseChallenge - Input:", { userId, challengeId, imoneyPrice });
+
+  // Find wallet and check balance
+  const wallet = await walletSchema.findOne({ user: userId }).populate("imoney");
+
+  if (!wallet || !wallet.imoney) {
+    throw new Error("Wallet not found for user");
+  }
+
+  const currentBalance = (wallet.imoney as any)?.value;
+  console.log("purchaseChallenge - Current balance:", currentBalance);
+
+  if (currentBalance < imoneyPrice) {
+    throw new Error(`Insufficient iMoney balance. Required: ${imoneyPrice}, Available: ${currentBalance}`);
+  }
+
+  // Deduct iMoney from wallet
+  const updatedImoney = await Imoney.findByIdAndUpdate(
+    wallet.imoney._id,
+    { $inc: { value: -imoneyPrice } },
+    { new: true }
+  );
+
+  if (!updatedImoney) {
+    throw new Error("Failed to deduct iMoney from wallet");
+  }
+
+  console.log("purchaseChallenge - iMoney deducted:", {
+    previousBalance: currentBalance,
+    deducted: imoneyPrice,
+    newBalance: updatedImoney.value,
+  });
+
+  // Return updated wallet
+  const updatedWallet = await walletSchema.findById(wallet._id).populate("imoney");
+  console.log("=== PURCHASE CHALLENGE END ===");
+
+  return {
+    wallet: updatedWallet,
+    transaction: {
+      type: 'challenge_purchase',
+      challengeId,
+      amount: imoneyPrice,
+      newBalance: updatedImoney.value
+    }
+  };
+}
+
+// Purchase skill with iMoney
+static async purchaseSkill(userId: string, skillId: string, imoneyPrice: number) {
+  console.log("=== PURCHASE SKILL START ===");
+  console.log("purchaseSkill - Input:", { userId, skillId, imoneyPrice });
+
+  // Find wallet and check balance
+  const wallet = await walletSchema.findOne({ user: userId }).populate("imoney");
+
+  if (!wallet || !wallet.imoney) {
+    throw new Error("Wallet not found for user");
+  }
+
+  const currentBalance = (wallet.imoney as any)?.value;
+  console.log("purchaseSkill - Current balance:", currentBalance);
+
+  if (currentBalance < imoneyPrice) {
+    throw new Error(`Insufficient iMoney balance. Required: ${imoneyPrice}, Available: ${currentBalance}`);
+  }
+
+  // Deduct iMoney from wallet
+  const updatedImoney = await Imoney.findByIdAndUpdate(
+    wallet.imoney._id,
+    { $inc: { value: -imoneyPrice } },
+    { new: true }
+  );
+
+  if (!updatedImoney) {
+    throw new Error("Failed to deduct iMoney from wallet");
+  }
+
+  console.log("purchaseSkill - iMoney deducted:", {
+    previousBalance: currentBalance,
+    deducted: imoneyPrice,
+    newBalance: updatedImoney.value,
+  });
+
+  // Return updated wallet
+  const updatedWallet = await walletSchema.findById(wallet._id).populate("imoney");
+  console.log("=== PURCHASE SKILL END ===");
+
+  return {
+    wallet: updatedWallet,
+    transaction: {
+      type: 'skill_purchase',
+      skillId,
+      amount: imoneyPrice,
+      newBalance: updatedImoney.value
+    }
+  };
+}
 }
 
 export default WalletService;
