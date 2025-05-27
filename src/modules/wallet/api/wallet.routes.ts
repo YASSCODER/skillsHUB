@@ -30,4 +30,7 @@ router.post("/test-email", catchAsync(WalletController.testEmail));
 // Check email configuration
 router.get("/check-email-config", catchAsync(WalletController.checkEmailConfig));
 
+// Convert points to iMoney and add to wallet
+router.post("/convert-points-to-imoney", catchAsync(WalletController.convertPointsToImoneyAndAddToWallet));
+
 export default router;
