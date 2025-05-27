@@ -4,10 +4,11 @@ import Stripe from "stripe";
 import dotenv from "dotenv";
 import { WalletEmailService } from "../services/wallet-email.service";
 import UserService from "../../user/api/user.service";
+import RewardsService from "../../reward/api/reward.service";
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: "2023-10-16",
+  apiVersion: "2025-03-31.basil",
 }); // Updated API version
 // console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
 class WalletController {
@@ -73,7 +74,7 @@ class WalletController {
     }
   }
   static async createCheckoutSession(req: Request, res: Response) {
-    const { userId, amount, imoneyValue, packageName } = req.body;
+    const { userId, amount, imoneyValue, packageName, points } = req.body;
 
     console.log("=== CREATE CHECKOUT SESSION DEBUG START ===");
     console.log("createCheckoutSession - Request body:", {
@@ -130,6 +131,7 @@ class WalletController {
           imoneyValue: imoneyValue.toString(),
           packageName: packageName || "Unknown Package",
           amount: amount.toString(),
+          points: points?.toString() || "0",
         },
         // Make sure we're using the correct URL format that matches our routes
         success_url: `http://localhost:4200/wallets/top-up/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -186,12 +188,14 @@ class WalletController {
       if (session.payment_status === "paid") {
         const userId = session.metadata?.userId;
         const imoneyValue = parseInt(session.metadata?.imoneyValue || "0");
+        const customPoints = parseInt(session.metadata?.points || "0");
 
         console.log(
           "handleCheckoutSuccess - Payment successful, processing top-up:",
           {
             userId,
             imoneyValue,
+            customPoints,
             metadataRaw: session.metadata,
           }
         );
@@ -219,6 +223,44 @@ class WalletController {
             "New wallet balance:",
             (updatedWallet?.imoney as any)?.value
           );
+
+          // Award points for wallet top-up
+          try {
+            console.log("handleCheckoutSuccess - Awarding points for top-up...");
+            const packageName = session.metadata?.packageName || "Unknown Package";
+
+            let pointsResult;
+            if (customPoints > 0) {
+              // Use custom points from package
+              console.log("handleCheckoutSuccess - Using custom points from package:", customPoints);
+              pointsResult = await RewardsService.earnCustomPointsForTopUp(
+                userId,
+                (updatedWallet?._id as any)?.toString() || currentWallet?._id?.toString() || "unknown",
+                customPoints,
+                packageName,
+                session.id
+              );
+            } else {
+              // Fallback to legacy calculation
+              console.log("handleCheckoutSuccess - Using legacy points calculation");
+              pointsResult = await RewardsService.earnPointsForTopUp(
+                userId,
+                (updatedWallet?._id as any)?.toString() || currentWallet?._id?.toString() || "unknown",
+                imoneyValue,
+                session.id
+              );
+            }
+
+            console.log("handleCheckoutSuccess - Points awarded:", {
+              pointsEarned: pointsResult.points,
+              method: customPoints > 0 ? 'custom' : 'legacy',
+              customPoints: customPoints,
+              packageName: packageName
+            });
+          } catch (pointsError: any) {
+            console.error("handleCheckoutSuccess - Failed to award points:", pointsError?.message);
+            // Don't fail the entire request if points fail
+          }
 
           // Send email notification
           try {
@@ -457,6 +499,24 @@ class WalletController {
         newBalance: result.transaction.newBalance,
       });
 
+      // Award points for challenge purchase
+      try {
+        console.log("purchaseChallenge - Awarding points for challenge purchase...");
+        const pointsResult = await RewardsService.earnPointsForChallengePurchase(
+          userId,
+          (result.wallet?._id as any)?.toString() || "unknown",
+          challengeId,
+          imoneyPrice
+        );
+        console.log("purchaseChallenge - Points awarded:", {
+          pointsEarned: pointsResult.points,
+          totalPoints: pointsResult.points
+        });
+      } catch (pointsError: any) {
+        console.error("purchaseChallenge - Failed to award points:", pointsError?.message);
+        // Don't fail the entire request if points fail
+      }
+
       res.status(200).json({
         message: "Challenge purchased successfully",
         challengeId,
@@ -490,6 +550,24 @@ class WalletController {
         amountDeducted: imoneyPrice,
         newBalance: result.transaction.newBalance,
       });
+
+      // Award points for skill purchase
+      try {
+        console.log("purchaseSkill - Awarding points for skill purchase...");
+        const pointsResult = await RewardsService.earnPointsForSkillPurchase(
+          userId,
+          (result.wallet?._id as any)?.toString() || "unknown",
+          skillId,
+          imoneyPrice
+        );
+        console.log("purchaseSkill - Points awarded:", {
+          pointsEarned: pointsResult.points,
+          totalPoints: pointsResult.points
+        });
+      } catch (pointsError: any) {
+        console.error("purchaseSkill - Failed to award points:", pointsError?.message);
+        // Don't fail the entire request if points fail
+      }
 
       res.status(200).json({
         message: "Skill purchased successfully",
@@ -592,6 +670,56 @@ class WalletController {
       message: "Email configuration check",
       config: config
     });
+  }
+
+  // Convert points to iMoney and add to wallet
+  static async convertPointsToImoneyAndAddToWallet(req: Request, res: Response) {
+    const { userId, points } = req.body;
+
+    console.log("=== CONVERT POINTS TO IMONEY AND ADD TO WALLET ===");
+    console.log("convertPointsToImoneyAndAddToWallet - Input:", { userId, points });
+
+    if (!userId || !points) {
+      return res.status(400).json({ error: "Missing required fields: userId, points" });
+    }
+
+    try {
+      // Get user's wallet
+      const wallet = await WalletService.getWalletByUserId(userId);
+      if (!wallet) {
+        return res.status(404).json({ error: "Wallet not found for user" });
+      }
+
+      // Convert points to iMoney (this deducts points)
+      const conversionResult = await RewardsService.convertPointsToImoney(
+        userId,
+        points,
+        (wallet._id as any)?.toString() || "unknown"
+      );
+
+      // Add the converted iMoney to the wallet
+      const updatedWallet = await WalletService.topUpImoney(userId, conversionResult.imoneyToAdd);
+
+      console.log("convertPointsToImoneyAndAddToWallet - Conversion and wallet update successful:", {
+        pointsDeducted: conversionResult.pointsDeducted,
+        imoneyAdded: conversionResult.imoneyToAdd,
+        newWalletBalance: (updatedWallet?.imoney as any)?.value,
+        remainingPoints: conversionResult.remainingPoints
+      });
+
+      res.status(200).json({
+        message: "Points converted to iMoney and added to wallet successfully",
+        pointsDeducted: conversionResult.pointsDeducted,
+        imoneyAdded: conversionResult.imoneyToAdd,
+        newWalletBalance: (updatedWallet?.imoney as any)?.value,
+        remainingPoints: conversionResult.remainingPoints,
+        conversionRate: conversionResult.conversionRate,
+        wallet: updatedWallet
+      });
+    } catch (error: any) {
+      console.error("convertPointsToImoneyAndAddToWallet - Error:", error.message);
+      res.status(400).json({ error: error.message });
+    }
   }
 }
 
