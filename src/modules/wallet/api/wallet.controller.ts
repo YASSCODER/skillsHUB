@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import WalletService from "./wallet.service";
 import Stripe from "stripe";
 import dotenv from "dotenv";
+import { WalletEmailService } from "../services/wallet-email.service";
+import UserService from "../../user/api/user.service";
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -71,15 +73,17 @@ class WalletController {
     }
   }
   static async createCheckoutSession(req: Request, res: Response) {
-    const { userId, amount, imoneyValue } = req.body;
+    const { userId, amount, imoneyValue, packageName } = req.body;
 
     console.log("=== CREATE CHECKOUT SESSION DEBUG START ===");
     console.log("createCheckoutSession - Request body:", {
       userId,
       amount,
       imoneyValue,
+      packageName,
     });
     console.log("createCheckoutSession - Package details:", {
+      packageName: packageName || "Unknown Package",
       stripeAmount: amount,
       imoneyToAdd: imoneyValue,
       note: "amount is what user pays, imoneyValue is what gets added to wallet"
@@ -90,6 +94,7 @@ class WalletController {
         userId,
         amount,
         imoneyValue,
+        packageName,
       });
       return res.status(400).json({ error: "Missing required fields" });
     }
@@ -123,6 +128,8 @@ class WalletController {
         metadata: {
           userId,
           imoneyValue: imoneyValue.toString(),
+          packageName: packageName || "Unknown Package",
+          amount: amount.toString(),
         },
         // Make sure we're using the correct URL format that matches our routes
         success_url: `http://localhost:4200/wallets/top-up/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -212,6 +219,54 @@ class WalletController {
             "New wallet balance:",
             (updatedWallet?.imoney as any)?.value
           );
+
+          // Send email notification
+          try {
+            console.log("handleCheckoutSuccess - Starting email notification process...");
+            console.log("handleCheckoutSuccess - User ID for email lookup:", userId);
+
+            // Get user information for email
+            const userService = new UserService();
+            const user = await userService.getUserById(userId);
+
+            console.log("handleCheckoutSuccess - User lookup result:", {
+              found: !!user,
+              hasEmail: !!(user && user.email),
+              userEmail: user?.email,
+              userName: user?.fullName,
+            });
+
+            // Try to send email if user has email, or use fallback for testing
+            const userEmail = user?.email || "test@example.com"; // Fallback for testing
+            const userName = user?.fullName || "Valued Customer";
+
+            if (userEmail) {
+              const packageName = session.metadata?.packageName || "Unknown Package";
+              const amountPaid = parseFloat(session.metadata?.amount || "0");
+
+              const emailData = {
+                userEmail: userEmail,
+                userName: userName,
+                packageName: packageName,
+                amountPaid: amountPaid,
+                imoneyReceived: imoneyValue,
+                newBalance: (updatedWallet?.imoney as any)?.value,
+                transactionId: session.id,
+              };
+
+              console.log("handleCheckoutSuccess - About to send email with data:", emailData);
+
+              const emailResult = await WalletEmailService.sendTopUpConfirmationEmail(emailData);
+              console.log("handleCheckoutSuccess - Email sent successfully:", emailResult);
+            } else {
+              console.log("handleCheckoutSuccess - Cannot send email - No email address available");
+              console.log("handleCheckoutSuccess - User object:", user);
+            }
+          } catch (emailError: any) {
+            console.error("handleCheckoutSuccess - Failed to send email notification:", emailError);
+            console.error("handleCheckoutSuccess - Email error stack:", emailError?.stack);
+            // Don't fail the entire request if email fails
+          }
 
           console.log("=== CHECKOUT SUCCESS DEBUG END ===");
 
@@ -475,6 +530,68 @@ class WalletController {
         details: error.message
       });
     }
+  }
+
+  // Test email endpoint
+  static async testEmail(req: Request, res: Response) {
+    console.log("=== TEST EMAIL ENDPOINT ===");
+
+    try {
+      const { userEmail, userName } = req.body;
+
+      if (!userEmail) {
+        return res.status(400).json({ error: "userEmail is required" });
+      }
+
+      const testEmailData = {
+        userEmail: userEmail,
+        userName: userName || "Test User",
+        packageName: "Premium Package (Test)",
+        amountPaid: 50,
+        imoneyReceived: 65,
+        newBalance: 215,
+        transactionId: "test_session_123456",
+      };
+
+      console.log("testEmail - Sending test email with data:", testEmailData);
+
+      const emailResult = await WalletEmailService.sendTopUpConfirmationEmail(testEmailData);
+
+      console.log("testEmail - Email result:", emailResult);
+
+      res.status(200).json({
+        message: "Test email sent successfully",
+        emailData: testEmailData,
+        result: emailResult
+      });
+    } catch (error: any) {
+      console.error("testEmail - Error:", error);
+      res.status(500).json({
+        error: "Failed to send test email",
+        details: error.message
+      });
+    }
+  }
+
+  // Check email configuration
+  static async checkEmailConfig(req: Request, res: Response) {
+    console.log("=== EMAIL CONFIG CHECK ===");
+
+    const config = {
+      hasEmailUser: !!process.env.EMAIL_USER,
+      hasEmailPass: !!process.env.EMAIL_PASS,
+      emailUserValue: process.env.EMAIL_USER ? `${process.env.EMAIL_USER.substring(0, 3)}***` : 'Not set',
+      // Legacy check
+      hasMailUser: !!process.env.MAIL_USER,
+      hasMailPassword: !!process.env.MAIL_PASSWORD,
+    };
+
+    console.log("Email configuration:", config);
+
+    res.status(200).json({
+      message: "Email configuration check",
+      config: config
+    });
   }
 }
 

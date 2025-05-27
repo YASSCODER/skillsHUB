@@ -24,4 +24,10 @@ router.post("/purchase/skill", catchAsync(WalletController.purchaseSkill));
 // Manual update endpoint
 router.post("/update-all-prices-to-65", catchAsync(WalletController.updateAllPricesToSixtyFive));
 
+// Test email endpoint
+router.post("/test-email", catchAsync(WalletController.testEmail));
+
+// Check email configuration
+router.get("/check-email-config", catchAsync(WalletController.checkEmailConfig));
+
 export default router;
