@@ -1,33 +1,13 @@
-
 import { Request, Response } from "express";
 import WalletService from "./wallet.service";
 import Stripe from "stripe";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Check if the API key exists and log a warning if it doesn't
-if (!process.env.STRIPE_SECRET_KEY) {
-  console.error("WARNING: STRIPE_SECRET_KEY is not defined in environment variables");
-}
-
-// Commenté pour éviter l'erreur d'initialisation
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
-//   apiVersion: "2023-10-16",
-// });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: "2023-10-16",
+}); // Updated API version
 // console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
-
-// Déclaration de stripe sans initialisation pour éviter les erreurs de compilation
-let stripe: any = null;
-
-// Fonction pour initialiser Stripe uniquement lorsque nécessaire
-const getStripeInstance = () => {
-  if (!stripe && process.env.STRIPE_SECRET_KEY) {
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-10-16",
-    });
-  }
-  return stripe;
-};
 class WalletController {
   static async getAllWallets(req: Request, res: Response) {
     try {
@@ -41,8 +21,7 @@ class WalletController {
   static async getWalletByUserId(req: Request, res: Response) {
     try {
       const wallet = await WalletService.getWalletByUserId(req.params.userId);
-      if (!wallet) return res.status(404).json({ error: "Wallet not found for this user" });
-      res.json(wallet);
+      res.json(wallet || null);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch wallet" });
     }
@@ -50,8 +29,7 @@ class WalletController {
   static async getWalletById(req: Request, res: Response) {
     try {
       const wallet = await WalletService.getWalletById(req.params.id);
-      if (!wallet) return res.status(404).json({ error: "Wallet not found" });
-      res.json(wallet);
+      res.json(wallet || null);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch wallet" });
     }
@@ -95,10 +73,16 @@ class WalletController {
   static async createCheckoutSession(req: Request, res: Response) {
     const { userId, amount, imoneyValue } = req.body;
 
+    console.log("=== CREATE CHECKOUT SESSION DEBUG START ===");
     console.log("createCheckoutSession - Request body:", {
       userId,
       amount,
       imoneyValue,
+    });
+    console.log("createCheckoutSession - Package details:", {
+      stripeAmount: amount,
+      imoneyToAdd: imoneyValue,
+      note: "amount is what user pays, imoneyValue is what gets added to wallet"
     });
 
     if (!userId || !amount || !imoneyValue) {
@@ -121,7 +105,7 @@ class WalletController {
         return res.status(400).json({ error: "Cannot top up a deactivated wallet" });
       }
 
-      const session = await getStripeInstance().checkout.sessions.create({
+      const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         mode: "payment",
         line_items: [
@@ -149,7 +133,9 @@ class WalletController {
         sessionId: session.id,
         url: session.url,
         metadata: session.metadata,
-        success_url: session.success_url, // Log the success URL for debugging
+        success_url: session.success_url,
+        userId_in_metadata: session.metadata?.userId,
+        imoneyValue_in_metadata: session.metadata?.imoneyValue,
       });
 
       res.status(200).json({ url: session.url, sessionId: session.id });
@@ -170,6 +156,7 @@ class WalletController {
   static async handleCheckoutSuccess(req: Request, res: Response) {
     const { session_id } = req.query;
 
+    console.log("=== CHECKOUT SUCCESS DEBUG START ===");
     console.log("handleCheckoutSuccess - Session ID from query:", session_id);
 
     if (!session_id) {
@@ -178,7 +165,7 @@ class WalletController {
     }
 
     try {
-      const session = await getStripeInstance().checkout.sessions.retrieve(
+      const session = await stripe.checkout.sessions.retrieve(
         session_id as string
       );
 
@@ -186,6 +173,7 @@ class WalletController {
         sessionId: session.id,
         payment_status: session.payment_status,
         metadata: session.metadata,
+        amount_total: session.amount_total,
       });
 
       if (session.payment_status === "paid") {
@@ -197,23 +185,53 @@ class WalletController {
           {
             userId,
             imoneyValue,
+            metadataRaw: session.metadata,
           }
         );
 
-        if (userId && imoneyValue) {
-          await WalletService.topUpImoney(userId, imoneyValue);
+        if (userId && imoneyValue > 0) {
+          console.log("handleCheckoutSuccess - Before wallet update, checking current wallet...");
+
+          // Get current wallet state before update
+          const currentWallet = await WalletService.getWalletByUserId(userId);
+          console.log("handleCheckoutSuccess - Current wallet before update:", {
+            walletId: currentWallet?._id,
+            currentBalance: (currentWallet?.imoney as any)?.value,
+            imoneyId: (currentWallet?.imoney as any)?._id,
+          });
+
+          const updatedWallet = await WalletService.topUpImoney(userId, imoneyValue);
+
           console.log(
             "handleCheckoutSuccess - iMoney topped up successfully for user:",
-            userId
+            userId,
+            "Previous balance:",
+            (currentWallet?.imoney as any)?.value,
+            "Added amount:",
+            imoneyValue,
+            "New wallet balance:",
+            (updatedWallet?.imoney as any)?.value
           );
-          res.status(200).json({ message: "iMoney topped up successfully" });
+
+          console.log("=== CHECKOUT SUCCESS DEBUG END ===");
+
+          res.status(200).json({
+            message: "iMoney topped up successfully",
+            wallet: updatedWallet,
+            debug: {
+              previousBalance: (currentWallet?.imoney as any)?.value,
+              addedAmount: imoneyValue,
+              newBalance: (updatedWallet?.imoney as any)?.value
+            }
+          });
           return;
         } else {
           console.log(
-            "handleCheckoutSuccess - Missing userId or imoneyValue in metadata:",
+            "handleCheckoutSuccess - Missing userId or invalid imoneyValue:",
             {
               userId,
               imoneyValue,
+              metadataRaw: session.metadata,
             }
           );
           res
@@ -236,6 +254,133 @@ class WalletController {
       res.status(500).json({ error: "Failed to retrieve session" });
     }
   }
+
+  // Test endpoint to manually test wallet top-up
+  static async testTopUp(req: Request, res: Response) {
+    const { userId, imoneyValue } = req.body;
+
+    console.log("=== TEST TOP UP START ===");
+    console.log("testTopUp - Input:", { userId, imoneyValue });
+    console.log("testTopUp - This will update the wallet for the specified user ID");
+
+    if (!userId || !imoneyValue) {
+      return res.status(400).json({ error: "Missing userId or imoneyValue" });
+    }
+
+    try {
+      // Get current wallet state
+      const currentWallet = await WalletService.getWalletByUserId(userId);
+      console.log("testTopUp - Current wallet:", {
+        exists: !!currentWallet,
+        walletId: currentWallet?._id,
+        currentBalance: (currentWallet?.imoney as any)?.value,
+        imoneyId: (currentWallet?.imoney as any)?._id,
+      });
+
+      if (!currentWallet) {
+        return res.status(404).json({ error: "Wallet not found for user" });
+      }
+
+      // Perform the top-up using imoneyValue (this is what gets added to the wallet)
+      const updatedWallet = await WalletService.topUpImoney(userId, imoneyValue);
+
+      console.log("testTopUp - Update result:", {
+        success: !!updatedWallet,
+        newBalance: (updatedWallet?.imoney as any)?.value,
+      });
+      console.log("=== TEST TOP UP END ===");
+
+      res.status(200).json({
+        message: "Test top-up successful",
+        before: (currentWallet?.imoney as any)?.value,
+        addedImoneyValue: imoneyValue,
+        after: (updatedWallet?.imoney as any)?.value,
+        wallet: updatedWallet
+      });
+    } catch (error: any) {
+      console.error("testTopUp - Error:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  // Test endpoint using alternative method
+  static async testTopUpAlternative(req: Request, res: Response) {
+    const { userId, imoneyValue } = req.body;
+
+    console.log("=== TEST ALTERNATIVE TOP UP START ===");
+    console.log("testTopUpAlternative - Input:", { userId, imoneyValue });
+
+    if (!userId || !imoneyValue) {
+      return res.status(400).json({ error: "Missing userId or imoneyValue" });
+    }
+
+    try {
+      // Get current wallet state
+      const currentWallet = await WalletService.getWalletByUserId(userId);
+      console.log("testTopUpAlternative - Current wallet:", {
+        exists: !!currentWallet,
+        currentBalance: (currentWallet?.imoney as any)?.value,
+      });
+
+      if (!currentWallet) {
+        return res.status(404).json({ error: "Wallet not found for user" });
+      }
+
+      // Perform the top-up using alternative method
+      const updatedWallet = await WalletService.topUpImoneyAlternative(userId, imoneyValue);
+
+      console.log("testTopUpAlternative - Update result:", {
+        success: !!updatedWallet,
+        newBalance: (updatedWallet?.imoney as any)?.value,
+      });
+      console.log("=== TEST ALTERNATIVE TOP UP END ===");
+
+      res.status(200).json({
+        message: "Alternative test top-up successful",
+        before: (currentWallet?.imoney as any)?.value,
+        addedImoneyValue: imoneyValue,
+        after: (updatedWallet?.imoney as any)?.value,
+        wallet: updatedWallet
+      });
+    } catch (error: any) {
+      console.error("testTopUpAlternative - Error:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  // Debug endpoint to check all wallets and find the correct user ID
+  static async debugWallets(req: Request, res: Response) {
+    console.log("=== DEBUG WALLETS START ===");
+
+    try {
+      const allWallets = await WalletService.getAllWallets();
+
+      console.log("debugWallets - Found wallets:", allWallets.length);
+
+      const walletInfo = allWallets.map(wallet => ({
+        walletId: wallet._id,
+        userId: (wallet.user as any)?._id || wallet.user,
+        userEmail: (wallet.user as any)?.email,
+        userName: (wallet.user as any)?.fullName,
+        imoneyId: (wallet.imoney as any)?._id,
+        imoneyValue: (wallet.imoney as any)?.value,
+        currencyType: (wallet.imoney as any)?.currencyType,
+        isActive: wallet.isActive,
+      }));
+
+      console.log("debugWallets - Wallet details:", JSON.stringify(walletInfo, null, 2));
+      console.log("=== DEBUG WALLETS END ===");
+
+      res.status(200).json({
+        message: "Debug info retrieved",
+        totalWallets: allWallets.length,
+        wallets: walletInfo
+      });
+    } catch (error: any) {
+      console.error("debugWallets - Error:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  }
 }
 
-export default WalletController; 
+export default WalletController;

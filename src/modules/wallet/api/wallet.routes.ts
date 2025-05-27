@@ -12,6 +12,9 @@ router.patch("/:id/deactivate", catchAsync(WalletController.deactivateWallet));
 router.patch("/:id/activate", catchAsync(WalletController.activateWallet));
 
 router.post("/top-up/create-session", catchAsync(WalletController.createCheckoutSession));
-// Remove this line
+router.get("/top-up/success", catchAsync(WalletController.handleCheckoutSuccess));
+router.post("/test-topup", catchAsync(WalletController.testTopUp));
+router.post("/test-topup-alt", catchAsync(WalletController.testTopUpAlternative));
+router.get("/debug-wallets", catchAsync(WalletController.debugWallets));
 
 export default router;
