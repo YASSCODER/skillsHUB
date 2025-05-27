@@ -17,4 +17,11 @@ router.post("/test-topup", catchAsync(WalletController.testTopUp));
 router.post("/test-topup-alt", catchAsync(WalletController.testTopUpAlternative));
 router.get("/debug-wallets", catchAsync(WalletController.debugWallets));
 
+// Purchase endpoints
+router.post("/purchase/challenge", catchAsync(WalletController.purchaseChallenge));
+router.post("/purchase/skill", catchAsync(WalletController.purchaseSkill));
+
+// Manual update endpoint
+router.post("/update-all-prices-to-65", catchAsync(WalletController.updateAllPricesToSixtyFive));
+
 export default router;
