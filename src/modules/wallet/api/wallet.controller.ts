@@ -480,6 +480,7 @@ class WalletController {
   }
 
   // Purchase challenge with iMoney
+  // Note: imoneyPrice is now passed in request body since it's removed from schema
   static async purchaseChallenge(req: Request, res: Response) {
     const { userId, challengeId, imoneyPrice } = req.body;
 
@@ -532,6 +533,7 @@ class WalletController {
   }
 
   // Purchase skill with iMoney
+  // Note: imoneyPrice is now passed in request body since it's removed from schema
   static async purchaseSkill(req: Request, res: Response) {
     const { userId, skillId, imoneyPrice } = req.body;
 
@@ -585,7 +587,7 @@ class WalletController {
 
   // Manual endpoint to update all skills and challenges to have imoneyPrice = 65
   static async updateAllPricesToSixtyFive(req: Request, res: Response) {
-    console.log("=== MANUAL UPDATE ENDPOINT CALLED ===");
+    console.log("=== DEPRECATED ENDPOINT CALLED ===");
 
     try {
       const result = await WalletService.updateAllPricesToSixtyFive();

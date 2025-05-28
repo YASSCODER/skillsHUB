@@ -214,53 +214,22 @@ static async topUpImoneyAlternative(userId: string, imoneyValue: number) {
   return finalWallet;
 }
 
-// Manual update: Set imoneyPrice to 65 for all skills and challenges
+// Note: imoneyPrice has been removed from skills and challenges schemas
+// This method is deprecated but kept for backward compatibility
 static async updateAllPricesToSixtyFive() {
-  console.log("=== MANUAL UPDATE: SET ALL PRICES TO 65 ===");
+  console.log("=== DEPRECATED: imoneyPrice has been removed from schemas ===");
 
-  try {
-    // Import the schemas
-    const SkillsSchema = (await import('../../../common/models/types/skills.schema')).default;
-    const ChallengeSchema = (await import('../../../common/models/types/challenge.schema')).default;
-
-    // Update all skills to have imoneyPrice = 65
-    const skillsResult = await SkillsSchema.updateMany(
-      {}, // Empty filter = all documents
-      { $set: { imoneyPrice: 65 } }
-    );
-
-    console.log(`Skills updated: ${skillsResult.modifiedCount} documents`);
-
-    // Update all challenges to have imoneyPrice = 65
-    const challengesResult = await ChallengeSchema.updateMany(
-      {}, // Empty filter = all documents
-      { $set: { imoneyPrice: 65 } }
-    );
-
-    console.log(`Challenges updated: ${challengesResult.modifiedCount} documents`);
-
-    // Get totals for verification
-    const totalSkills = await SkillsSchema.countDocuments();
-    const totalChallenges = await ChallengeSchema.countDocuments();
-
-    console.log("=== UPDATE COMPLETED ===");
-    console.log(`Total Skills: ${totalSkills}`);
-    console.log(`Total Challenges: ${totalChallenges}`);
-
-    return {
-      skillsUpdated: skillsResult.modifiedCount,
-      challengesUpdated: challengesResult.modifiedCount,
-      totalSkills,
-      totalChallenges
-    };
-
-  } catch (error) {
-    console.error("Error updating prices:", error);
-    throw error;
-  }
+  return {
+    skillsUpdated: 0,
+    challengesUpdated: 0,
+    totalSkills: 0,
+    totalChallenges: 0,
+    message: "imoneyPrice attribute has been removed from skills and challenges schemas"
+  };
 }
 
 // Purchase challenge with iMoney
+// Note: imoneyPrice is now passed as parameter since it's removed from schema
 static async purchaseChallenge(userId: string, challengeId: string, imoneyPrice: number) {
   console.log("=== PURCHASE CHALLENGE START ===");
   console.log("purchaseChallenge - Input:", { userId, challengeId, imoneyPrice });
@@ -312,6 +281,7 @@ static async purchaseChallenge(userId: string, challengeId: string, imoneyPrice:
 }
 
 // Purchase skill with iMoney
+// Note: imoneyPrice is now passed as parameter since it's removed from schema
 static async purchaseSkill(userId: string, skillId: string, imoneyPrice: number) {
   console.log("=== PURCHASE SKILL START ===");
   console.log("purchaseSkill - Input:", { userId, skillId, imoneyPrice });
