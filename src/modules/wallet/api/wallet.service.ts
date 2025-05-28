@@ -15,6 +15,9 @@ class WalletService {
     return await walletSchema.findById(id).populate("user").populate("imoney");
   }
   static async createWallet(walletData: any) {
+    console.log("=== CREATE WALLET START ===");
+    console.log("createWallet - Input data:", walletData);
+
     // Handle userId if provided instead of user
     if (walletData.userId && !walletData.user) {
       walletData.user = walletData.userId;
@@ -27,11 +30,26 @@ class WalletService {
       value: 150
     };
 
+    console.log("createWallet - Creating iMoney with data:", imoneyData);
     const imoney = await Imoney.create(imoneyData);
+    console.log("createWallet - iMoney created:", imoney);
+
     const walletDataWithImoney = { ...walletData, imoney: imoney._id };
+    console.log("createWallet - Creating wallet with data:", walletDataWithImoney);
+
     const wallet = await walletSchema.create(walletDataWithImoney);
+    console.log("createWallet - Wallet created:", wallet);
+
+    // Update user with wallet reference
     await userSchema.findByIdAndUpdate(walletData.user, { wallet: wallet._id }, { new: true });
-    return wallet;
+    console.log("createWallet - User updated with wallet reference");
+
+    // Return populated wallet
+    const populatedWallet = await walletSchema.findById(wallet._id).populate("user").populate("imoney");
+    console.log("createWallet - Returning populated wallet:", populatedWallet);
+    console.log("=== CREATE WALLET END ===");
+
+    return populatedWallet;
   }
 
   static async deactivateWallet(walletId: string) {
