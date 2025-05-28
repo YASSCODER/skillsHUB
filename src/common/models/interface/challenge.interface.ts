@@ -17,7 +17,6 @@ export interface IChallenge extends Document {
   startDate: Date;
   scores: IScore[];
   createdBy: mongoose.Types.ObjectId;
-  imoneyPrice?: number; // Price in iMoney to purchase this challenge
   createdAt?: Date;
   updatedAt?: Date;
 

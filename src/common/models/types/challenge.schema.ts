@@ -26,7 +26,6 @@
       scores: { type: [ScoreSchema], default: [] },
       createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // 🆕 Ajout de la relation
       questions: { type: [QuestionSchema], default: [] }, // 🆕 Ajouté ici
-      imoneyPrice: { type: Number, default: 0 } // Price in iMoney to purchase this challenge
     }, { timestamps: true });
 
   ChallengeSchema.add(BaseSchema);
