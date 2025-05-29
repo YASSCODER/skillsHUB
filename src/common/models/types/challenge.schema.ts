@@ -23,9 +23,9 @@
       skill: { type: mongoose.Schema.Types.ObjectId, ref: "Skill", default: null },
       difficulty: { type: String, enum: ["easy", "medium", "hard"], required: true },
       startDate: { type: Date, required: true },
-      scores: { type: [ScoreSchema], default: [] }, 
+      scores: { type: [ScoreSchema], default: [] },
       createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // 🆕 Ajout de la relation
-      questions: { type: [QuestionSchema], default: [] } // 🆕 Ajouté ici
+      questions: { type: [QuestionSchema], default: [] }, // 🆕 Ajouté ici
     }, { timestamps: true });
 
   ChallengeSchema.add(BaseSchema);

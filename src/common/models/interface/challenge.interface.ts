@@ -12,13 +12,13 @@ export interface IChallenge extends Document {
   id: string;
   title: string;
   description: string;
-  skill: mongoose.Types.ObjectId; 
+  skill: mongoose.Types.ObjectId;
   difficulty: "easy" | "medium" | "hard";
   startDate: Date;
   scores: IScore[];
   createdBy: mongoose.Types.ObjectId;
-  createdAt?: Date;  
+  createdAt?: Date;
   updatedAt?: Date;
- 
- 
+
+
 }

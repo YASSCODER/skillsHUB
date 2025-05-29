@@ -58,13 +58,13 @@ app.use('/api/notifications', notificationRoutes);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Error occurred:', err);
-  logger.error('Error occurred', { 
+  logger.error('Error occurred', {
     message: err.message,
     stack: err.stack,
     path: req.path
   });
-  res.status(500).json({ 
-    error: "Internal Server Error", 
+  res.status(500).json({
+    error: "Internal Server Error",
     message: err.message,
     path: req.path
   });
