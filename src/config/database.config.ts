@@ -18,7 +18,7 @@ const connectDB = async () => {
 
     logger.info("[Database] ✅ Connected to MongoDB Atlas");
   } catch (err) {
-    logger.error("[Database] ❌ Connection error: " + err);
+    logger.error("[Database] ❌ Connection error:", err);
     process.exit(1);
   }
 };
