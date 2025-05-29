@@ -202,15 +202,13 @@ export class SessionController {
     }
   }
 
-  // Get sessions by salon
-  async getSessionsBySalon(req: Request, res: Response): Promise<Response> {
+  async getSessionsBySalonNom(req: Request, res: Response) {
     try {
-      const { salonId } = req.params;
-      const sessions = await sessionService.findSessionsBySalon(salonId);
-      return res.status(200).json(sessions);
-    } catch (error) {
-      console.error("Erreur lors de la récupération des sessions par salon :", error);
-      return res.status(500).json({ error: "Erreur lors de la récupération des sessions par salon" });
+      const { salonNom } = req.params;
+      const sessions = await sessionService.getSessionsBySalonNom(salonNom);
+      res.json(sessions);
+    } catch (err: any) {
+      res.status(404).json({ message: err.message });
     }
   }
 
