@@ -8,3 +8,4 @@ export interface ISession extends Document {
   createurNom: string;
   etat: "active" | "terminée" | "en attente";
 }
+

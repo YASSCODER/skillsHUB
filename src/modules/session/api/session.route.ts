@@ -1,14 +1,15 @@
 import { Router, Request, Response } from "express";
 import { SessionController } from "./session.controller";
 import catchAsync from "../../../common/utils/catch-async.utils";
-
+import Salon from '../../../common/models/salon.schema';
+import Session from '../../../common/models/session.schema';
 const router = Router();
 const sessionController = new SessionController();
 
 // ➕ Créer une session
 router.get('/search', catchAsync((req: Request, res: Response) => sessionController.searchSessions(req, res)));
 
-router.post("/", catchAsync((req: Request, res: Response) => sessionController.createSession(req, res)));
+router.post("/:salonNom", catchAsync((req: Request, res: Response) => sessionController.createSession(req, res)));
 // 📋 Récupérer toutes les sessions
 router.get("/", catchAsync((req: Request, res: Response) => sessionController.getAllSessions(req, res)));
 
@@ -17,7 +18,6 @@ router.get("/:id", catchAsync((req: Request, res: Response) => sessionController
 
 // 🔄 Mettre à jour une session par ID
 router.put("/:id", catchAsync((req: Request, res: Response) => sessionController.updateSession(req, res)));
-
 // 🗑️ Supprimer une session par ID
 router.delete("/:id", catchAsync((req: Request, res: Response) => sessionController.deleteSession(req, res)));
 
@@ -48,5 +48,9 @@ router.post("/salons/:salonId/sessions", catchAsync((req: Request, res: Response
 // Nouvelles routes pour filtrer par compétence
 router.get("/skill/:skillId", catchAsync(async (req: Request, res: Response) => sessionController.getSessionsBySkill(req, res)));
 router.get("/salon/:salonId/skill/:skillId", catchAsync(async (req: Request, res: Response) => sessionController.getSessionsBySalonAndSkill(req, res)));
+// GET /api/sessions/by-salon-name/:name
+
+// GET /sessions/by-salon/:salonNom
+router.get('/by-salon/:salonNom', sessionController.getSessionsBySalonNom);
 
 export default router;
