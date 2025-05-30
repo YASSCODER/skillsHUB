@@ -85,7 +85,6 @@ export class WalletEmailService {
         <div class="container">
           <!-- Header with Logo and Branding -->
           <div class="header">
-            <img src="https://raw.githubusercontent.com/yourusername/smartskillz/main/assets/logo_transparent.png" alt="SmartSkillz Logo" class="logo" style="height: 60px; width: auto; margin-bottom: 15px;">
             <div class="brand-name" style="font-size: 28px; font-weight: bold; margin: 10px 0; color: white;">SmartSkillz</div>
             <div class="success-icon" style="font-size: 48px; margin: 15px 0;">🎉</div>
             <h1 style="margin: 0; font-size: 24px; color: white;">Wallet Top-Up Successful!</h1>
@@ -143,8 +142,6 @@ export class WalletEmailService {
               <ul style="color: #333; margin: 0; padding-left: 25px; line-height: 1.8;">
                 <li><strong>🏆 Premium Challenges</strong> - Test your skills with advanced challenges</li>
                 <li><strong>🎯 Exclusive Skills</strong> - Access expert-level courses and tutorials</li>
-                <li><strong>📚 Advanced Content</strong> - Unlock specialized learning materials</li>
-                <li><strong>🎓 Certification Programs</strong> - Earn recognized certificates</li>
               </ul>
             </div>
 
@@ -162,9 +159,6 @@ export class WalletEmailService {
 
           <!-- Footer -->
           <div style="text-align: center; color: #999; font-size: 14px; margin-top: 30px; padding: 20px; background: #F9FAFB; border-radius: 10px;">
-            <div style="margin-bottom: 15px;">
-              <img src="https://raw.githubusercontent.com/yourusername/smartskillz/main/assets/logo_transparent.png" alt="SmartSkillz Logo" style="height: 30px; width: auto; opacity: 0.7;">
-            </div>
             <p style="margin: 0 0 10px 0; font-weight: 600; color: #666;">
               This is an automated message from <strong>SmartSkillz</strong>
             </p>

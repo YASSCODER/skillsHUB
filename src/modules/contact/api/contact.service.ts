@@ -418,8 +418,6 @@ For immediate assistance, contact us at support@smartskillz.com
             <div style="text-align: center; margin: 30px 0;">
               <h3>🔧 Admin Actions Required:</h3>
               <p>Please review this wallet activation request and take appropriate action.</p>
-              <a href="#" class="action-button">🔍 Review Wallet</a>
-              <a href="#" class="action-button">✅ Activate Wallet</a>
               <a href="mailto:${requestData.userEmail}" class="action-button">📧 Contact User</a>
             </div>
           </div>
