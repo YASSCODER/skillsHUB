@@ -331,8 +331,6 @@ We have received your message about "${formData.subject}" and our support team w
 
 What happens next?
 - Our support team will review your message within 24 hours
-- You'll receive a detailed response at this email address
-- For urgent matters, you can call us at +1 (555) 123-4567
 
 Thank you for choosing SmartSkillz!
 
