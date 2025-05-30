@@ -302,8 +302,6 @@ Please respond to the user at: ${formData.email}
             <p><strong>⏰ What happens next?</strong></p>
             <ul>
               <li>Our support team will review your message within 24 hours</li>
-              <li>You'll receive a detailed response at this email address</li>
-              <li>For urgent matters, you can also call us at +1 (555) 123-4567</li>
             </ul>
 
             <p>In the meantime, feel free to explore our platform and discover new learning opportunities!</p>
@@ -333,8 +331,6 @@ We have received your message about "${formData.subject}" and our support team w
 
 What happens next?
 - Our support team will review your message within 24 hours
-- You'll receive a detailed response at this email address
-- For urgent matters, you can call us at +1 (555) 123-4567
 
 Thank you for choosing SmartSkillz!
 
@@ -418,8 +414,6 @@ For immediate assistance, contact us at support@smartskillz.com
             <div style="text-align: center; margin: 30px 0;">
               <h3>🔧 Admin Actions Required:</h3>
               <p>Please review this wallet activation request and take appropriate action.</p>
-              <a href="#" class="action-button">🔍 Review Wallet</a>
-              <a href="#" class="action-button">✅ Activate Wallet</a>
               <a href="mailto:${requestData.userEmail}" class="action-button">📧 Contact User</a>
             </div>
           </div>
