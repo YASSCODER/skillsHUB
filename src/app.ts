@@ -14,8 +14,12 @@ import { Server as HttpServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { notificationService } from './common/services/notification.service';
 import notificationRoutes from './common/routes/notification.route';
+import SessionMessage from './common/models/sessions.message.schema'
+import mongoose from "mongoose"; // Ajoute ceci avec tes imports
 
 dotenv.config();
+
+
 
 const app: Application = express();
 
@@ -54,13 +58,13 @@ app.use('/api/notifications', notificationRoutes);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Error occurred:', err);
-  logger.error('Error occurred', { 
+  logger.error('Error occurred', {
     message: err.message,
     stack: err.stack,
     path: req.path
   });
-  res.status(500).json({ 
-    error: "Internal Server Error", 
+  res.status(500).json({
+    error: "Internal Server Error",
     message: err.message,
     path: req.path
   });
@@ -77,19 +81,34 @@ const io = new SocketServer(server, {
   }
 });
 
+
+
 // Initialiser le service de notification
 notificationService.initialize(io);
 
-// Gestion des connexions Socket.IO
 io.on('connection', (socket) => {
   console.log('Nouvelle connexion socket:', socket.id);
-  
+
   // Authentification du socket
   socket.on('authenticate', (userId) => {
     if (userId) {
       socket.join(userId);
       console.log(`Utilisateur ${userId} authentifié sur le socket ${socket.id}`);
     }
+  });
+
+  // Gestion du chat de session
+  socket.on('joinSession', async ({ sessionId, user }) => {
+    socket.join(sessionId);
+    const messages = await SessionMessage.find({ sessionId }).sort({ timestamp: 1 }).lean();
+    socket.emit('chatHistory', messages);
+    socket.to(sessionId).emit('userJoined', user);
+  });
+
+  socket.on('sendMessage', async ({ sessionId, user, message }) => {
+    const msgData = new SessionMessage({ sessionId, user, message });
+    await msgData.save();
+    io.to(sessionId).emit('receiveMessage', msgData);
   });
 
   socket.on('disconnect', () => {

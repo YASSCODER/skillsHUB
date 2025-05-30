@@ -15,6 +15,7 @@ import SalonModule, { CalendarModule } from "./modules/salon/salon.module";
 import SessionModule from "./modules/session/session.module";
 import EventModule from "./modules/Event/event.module";
 import MarketplaceModule from "./modules/Marketplace/Marketplace.module";
+import ContactModule from "./modules/contact/contact.module";
 import CategoryModule from "./modules/Category/Category.module";
 
 const modules = [
@@ -36,6 +37,7 @@ const modules = [
   EventModule,
   MarketplaceModule,
   CalendarModule,
+  ContactModule,
   CategoryModule,
 ];
 

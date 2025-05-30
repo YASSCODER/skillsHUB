@@ -15,6 +15,9 @@ class WalletService {
     return await walletSchema.findById(id).populate("user").populate("imoney");
   }
   static async createWallet(walletData: any) {
+    console.log("=== CREATE WALLET START ===");
+    console.log("createWallet - Input data:", walletData);
+
     // Handle userId if provided instead of user
     if (walletData.userId && !walletData.user) {
       walletData.user = walletData.userId;
@@ -27,11 +30,26 @@ class WalletService {
       value: 150
     };
 
+    console.log("createWallet - Creating iMoney with data:", imoneyData);
     const imoney = await Imoney.create(imoneyData);
+    console.log("createWallet - iMoney created:", imoney);
+
     const walletDataWithImoney = { ...walletData, imoney: imoney._id };
+    console.log("createWallet - Creating wallet with data:", walletDataWithImoney);
+
     const wallet = await walletSchema.create(walletDataWithImoney);
+    console.log("createWallet - Wallet created:", wallet);
+
+    // Update user with wallet reference
     await userSchema.findByIdAndUpdate(walletData.user, { wallet: wallet._id }, { new: true });
-    return wallet;
+    console.log("createWallet - User updated with wallet reference");
+
+    // Return populated wallet
+    const populatedWallet = await walletSchema.findById(wallet._id).populate("user").populate("imoney");
+    console.log("createWallet - Returning populated wallet:", populatedWallet);
+    console.log("=== CREATE WALLET END ===");
+
+    return populatedWallet;
   }
 
   static async deactivateWallet(walletId: string) {
@@ -194,6 +212,124 @@ static async topUpImoneyAlternative(userId: string, imoneyValue: number) {
   console.log("=== ALTERNATIVE TOP UP METHOD END ===");
 
   return finalWallet;
+}
+
+// Note: imoneyPrice has been removed from skills and challenges schemas
+// This method is deprecated but kept for backward compatibility
+static async updateAllPricesToSixtyFive() {
+  console.log("=== DEPRECATED: imoneyPrice has been removed from schemas ===");
+
+  return {
+    skillsUpdated: 0,
+    challengesUpdated: 0,
+    totalSkills: 0,
+    totalChallenges: 0,
+    message: "imoneyPrice attribute has been removed from skills and challenges schemas"
+  };
+}
+
+// Purchase challenge with iMoney
+// Note: imoneyPrice is now passed as parameter since it's removed from schema
+static async purchaseChallenge(userId: string, challengeId: string, imoneyPrice: number) {
+  console.log("=== PURCHASE CHALLENGE START ===");
+  console.log("purchaseChallenge - Input:", { userId, challengeId, imoneyPrice });
+
+  // Find wallet and check balance
+  const wallet = await walletSchema.findOne({ user: userId }).populate("imoney");
+
+  if (!wallet || !wallet.imoney) {
+    throw new Error("Wallet not found for user");
+  }
+
+  const currentBalance = (wallet.imoney as any)?.value;
+  console.log("purchaseChallenge - Current balance:", currentBalance);
+
+  if (currentBalance < imoneyPrice) {
+    throw new Error(`Insufficient iMoney balance. Required: ${imoneyPrice}, Available: ${currentBalance}`);
+  }
+
+  // Deduct iMoney from wallet
+  const updatedImoney = await Imoney.findByIdAndUpdate(
+    wallet.imoney._id,
+    { $inc: { value: -imoneyPrice } },
+    { new: true }
+  );
+
+  if (!updatedImoney) {
+    throw new Error("Failed to deduct iMoney from wallet");
+  }
+
+  console.log("purchaseChallenge - iMoney deducted:", {
+    previousBalance: currentBalance,
+    deducted: imoneyPrice,
+    newBalance: updatedImoney.value,
+  });
+
+  // Return updated wallet
+  const updatedWallet = await walletSchema.findById(wallet._id).populate("imoney");
+  console.log("=== PURCHASE CHALLENGE END ===");
+
+  return {
+    wallet: updatedWallet,
+    transaction: {
+      type: 'challenge_purchase',
+      challengeId,
+      amount: imoneyPrice,
+      newBalance: updatedImoney.value
+    }
+  };
+}
+
+// Purchase skill with iMoney
+// Note: imoneyPrice is now passed as parameter since it's removed from schema
+static async purchaseSkill(userId: string, skillId: string, imoneyPrice: number) {
+  console.log("=== PURCHASE SKILL START ===");
+  console.log("purchaseSkill - Input:", { userId, skillId, imoneyPrice });
+
+  // Find wallet and check balance
+  const wallet = await walletSchema.findOne({ user: userId }).populate("imoney");
+
+  if (!wallet || !wallet.imoney) {
+    throw new Error("Wallet not found for user");
+  }
+
+  const currentBalance = (wallet.imoney as any)?.value;
+  console.log("purchaseSkill - Current balance:", currentBalance);
+
+  if (currentBalance < imoneyPrice) {
+    throw new Error(`Insufficient iMoney balance. Required: ${imoneyPrice}, Available: ${currentBalance}`);
+  }
+
+  // Deduct iMoney from wallet
+  const updatedImoney = await Imoney.findByIdAndUpdate(
+    wallet.imoney._id,
+    { $inc: { value: -imoneyPrice } },
+    { new: true }
+  );
+
+  if (!updatedImoney) {
+    throw new Error("Failed to deduct iMoney from wallet");
+  }
+
+  console.log("purchaseSkill - iMoney deducted:", {
+    previousBalance: currentBalance,
+    deducted: imoneyPrice,
+    newBalance: updatedImoney.value,
+  });
+
+  // Return updated wallet
+  const updatedWallet = await walletSchema.findById(wallet._id).populate("imoney");
+  console.log("=== PURCHASE SKILL END ===");
+
+  return {
+    wallet: updatedWallet,
+    transaction: {
+      type: 'skill_purchase',
+      skillId,
+      amount: imoneyPrice,
+      newBalance: updatedImoney.value
+    }
+  };
 }
 }
 

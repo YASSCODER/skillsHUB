@@ -1,7 +1,7 @@
 import { isValidObjectId } from "mongoose";
 import Session, { SessionDocument } from "../../../common/models/session.schema";
-import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import dayjs from "dayjs";
 import Salon from "../../../common/models/salon.schema";
 import mongoose from "mongoose";
 import { CalendarService } from "../../salon/api/calendar.service";
@@ -9,78 +9,53 @@ import { CalendarService } from "../../salon/api/calendar.service";
 dayjs.extend(customParseFormat);
 
 export class SessionService {
-  private calendarService: CalendarService;
-
-  constructor() {
-    this.calendarService = new CalendarService();
-  }
-
-  // Créer une session
+  // Créer une session (SANS calendrier, gestion robuste des dates)
   async createSession(salonId: string, data: Partial<SessionDocument>): Promise<any> {
     try {
-      console.log("Données reçues dans createSession:", data);
-      
-      // Vérifier si les données sont au format string et les convertir en Date
-      if (typeof data.dateDebut === 'string') {
-        // Format attendu: "DD/MM/YYYY HH:mm"
-        const [datePart, timePart] = (data.dateDebut as string).split(' ');
-        const [day, month, year] = datePart.split('/');
-        const [hours, minutes] = timePart.split(':');
-        data.dateDebut = new Date(
-          parseInt(year), 
-          parseInt(month) - 1, // Les mois commencent à 0 en JavaScript
-          parseInt(day),
-          parseInt(hours),
-          parseInt(minutes)
-        );
+      // Gestion de dateDebut
+      let dateDebut: Date | undefined = undefined;
+      if (typeof data.dateDebut === "string") {
+        // Essaie d'abord le format "DD/MM/YYYY HH:mm", sinon ISO, sinon lève une erreur
+        const parsed = dayjs(data.dateDebut, "DD/MM/YYYY HH:mm", true);
+        if (!parsed.isValid()) throw new Error("Format de dateDebut invalide");
+        dateDebut = parsed.toDate();
+      } else if (data.dateDebut instanceof Date) {
+        dateDebut = data.dateDebut;
       }
-      
-      if (typeof data.dateFin === 'string') {
-        // Format attendu: "DD/MM/YYYY HH:mm"
-        const [datePart, timePart] = (data.dateFin as string).split(' ');
-        const [day, month, year] = datePart.split('/');
-        const [hours, minutes] = timePart.split(':');
-        data.dateFin = new Date(
-          parseInt(year), 
-          parseInt(month) - 1, // Les mois commencent à 0 en JavaScript
-          parseInt(day),
-          parseInt(hours),
-          parseInt(minutes)
-        );
+
+      // Gestion de dateFin
+      let dateFin: Date | undefined = undefined;
+      if (typeof data.dateFin === "string") {
+        const parsed = dayjs(data.dateFin, "DD/MM/YYYY HH:mm", true);
+        if (!parsed.isValid()) throw new Error("Format de dateFin invalide");
+        dateFin = parsed.toDate();
+      } else if (data.dateFin instanceof Date) {
+        dateFin = data.dateFin;
       }
-      
-      // Création de la session avec les données converties
+
+      // Vérifications finales
+      if (!dateDebut || !dateFin) throw new Error("dateDebut ou dateFin non fournie");
+      if (dateFin <= dateDebut) throw new Error("La date de fin doit être après la date de début");
+
+      // Création de la session
       const newSession = new Session({
         salonId,
         type: data.type,
-        dateDebut: data.dateDebut,
-        dateFin: data.dateFin,
+        dateDebut,
+        dateFin,
         createurNom: data.createurNom,
         etat: data.etat || "en attente"
       });
-      
+
       const saved = await newSession.save();
-      
-      // Créer un événement de calendrier correspondant
-      await this.calendarService.createEvent({
-        title: data.type === "chat" ? "Chat: " + (data.title || "Sans titre") : "Meet: " + (data.title || "Sans titre"),
-        salonId,
-        sessionId: saved._id,
-        start: saved.dateDebut,
-        end: saved.dateFin,
-        description: data.description || "",
-        createdBy: data.createurId,
-        attendees: data.participants || [],
-        color: data.type === "chat" ? "#4a6ee0" : "#e06e4a"
-      });
-      
       return {
         id: saved._id,
         type: saved.type,
         dateDebut: saved.dateDebut,
         dateFin: saved.dateFin,
         createurNom: saved.createurNom,
-        etat: saved.etat
+        etat: saved.etat,
+        salonId: saved.salonId
       };
     } catch (error) {
       console.error("Erreur dans createSession:", error);
@@ -275,5 +250,13 @@ export class SessionService {
       console.error("Erreur dans advancedSearch:", error);
       throw error;
     }
+  }
+    async getSessionsBySalonNom(salonNom: string): Promise<SessionDocument[]> {
+    // Trouver le salon par son nom
+    const salon = await Salon.findOne({ nom: salonNom });
+    if (!salon) throw new Error('Salon introuvable');
+
+    // Trouver les sessions liées au salon
+    return Session.find({ salonId: salon._id });
   }
 }
