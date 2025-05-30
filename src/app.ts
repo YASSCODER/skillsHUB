@@ -18,13 +18,28 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
-);
-app.use(cors());
-
-// Middleware pour parser les requêtes JSON
-app.use(express.json());
+);// Middleware pour parser les requêtes JSapp.use(express.json());
+// Ajoutez après la configuration CORS
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com data:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;"
+  );
+  next();
+});
 // ✅ Enregistrer les routes/modules
 appRegisterModules(app);
+
+// Ajoutez cette ligne pour déboguer les routes enregistrées (safely)
+try {
+  if (app._router && app._router.stack) {
+    console.log('Routes registered:', app._router.stack.filter((r: any) => r.route).map((r: any) => r.route.path));
+  } else {
+    console.log('Router not yet initialized');
+  }
+} catch (error: any) {
+  console.log('Could not access router stack:', error?.message || 'Unknown error');
+}
 
 // ✅ Route de vérification de santé
 app.get("/", (req: Request, res: Response) => {

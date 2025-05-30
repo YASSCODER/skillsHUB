@@ -11,4 +11,11 @@ router.put('/:id', catchAsync(ForumController.updateForum));
 router.delete('/:id',catchAsync( ForumController.deleteForum));
 router.post("/:forumId/rate/:userId", catchAsync(ForumController.rateForum));
 router.get("/byUser/:userId", catchAsync(ForumController.getForumsByUser));
+
+// ==================== COMMENT ROUTES ====================
+router.get('/:forumId/comments', catchAsync(ForumController.getForumComments));
+router.post('/:forumId/comments', catchAsync(ForumController.addCommentToForum));
+router.delete('/:forumId/comments/:commentId', catchAsync(ForumController.deleteCommentFromForum));
+router.post('/:forumId/comments/:commentId/like', catchAsync(ForumController.likeComment));
+
 export default router;

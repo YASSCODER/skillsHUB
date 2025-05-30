@@ -35,26 +35,18 @@ const modules = [
   EventModule,
 ];
 
+// Ajoutez ce log pour déboguer
+console.log('Modules registered:', modules.map(m => m.path));
+
 const appRegisterModules = (app: Application): void => {
-  const apiPrefix = "/api";
+  const apiPrefix = "/api"; // Vérifiez ce préfixe
   modules.forEach((module) => {
     app.use(`${apiPrefix}${module.path}`, module.handler);
     logger.info(`[ModuleResolver] Mapped {${module.path}} module`);
-
-    module.handler.stack.forEach((middleware: any) => {
-      if (middleware.route) {
-        const method = Object.keys(middleware.route.methods)[0].toUpperCase();
-        const path = middleware.route.path;
-        logger.info(
-          `[RoutesResolver] Mapped {${method} ${apiPrefix}${module.path}${path}}`
-        );
-      }
-    });
+    
+    // Log pour déboguer
+    console.log(`Route registered: ${apiPrefix}${module.path}`);
   });
-
-  if (modules.length === 0) {
-    logger.warn("[RoutesResolver] No modules found. Add modules to the array.");
-  }
 };
 
 export default appRegisterModules;
