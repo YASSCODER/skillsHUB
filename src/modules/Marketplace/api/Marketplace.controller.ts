@@ -23,7 +23,7 @@ class MarketplaceController {
     }
   }
 
-  static async createSkill(req: Request, res: Response) {
+  /*static async createSkill(req: Request, res: Response) {
     try {
       // Log the request body to debug
       console.log("Create skill request body:", req.body);
@@ -42,6 +42,37 @@ class MarketplaceController {
       res.status(500).json({ error: errorMessage });
     }
   }
+*/
+static async createSkill(req: Request, res: Response) {
+  try {
+    console.log("Create skill request body:", req.body);
+
+    const { name, description, category, userId } = req.body;
+
+    // Vérification obligatoire de userId
+    if (!userId || typeof userId !== 'string') {
+      return res.status(400).json({ error: "Invalid or missing user ID" });
+    }
+
+    const newSkill = await MarketplaceService.createSkill({
+      name,
+      description,
+      category,
+      userId
+    });
+
+    res.status(201).json(newSkill);
+  } catch (error) {
+    console.error("CREATE SKILL ERROR:", error);
+
+    let errorMessage = "Failed to create Skill";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    res.status(500).json({ error: errorMessage });
+  }
+}
 
   static async updateSkill(req: Request, res: Response) {
     try {

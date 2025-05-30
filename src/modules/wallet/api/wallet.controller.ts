@@ -5,9 +5,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: "2023-10-16",
-}); // Updated API version
-// console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
+apiVersion: "2025-04-30.basil",
+}); 
+ console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
 class WalletController {
   static async getAllWallets(req: Request, res: Response) {
     try {
