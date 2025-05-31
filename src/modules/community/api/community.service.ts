@@ -1,4 +1,3 @@
-
 import Community from "../../../common/models/types/community.schema";
 import communitySchema from "../../../common/models/types/community.schema";
 
@@ -12,13 +11,14 @@ class CommunityService {
     return await Community.findById(id); // Fetch the community by its ID
   }
 
-
   async createCommunity(communityData: any) {
     return await communitySchema.create(communityData);
   }
 
   async updateCommunity(id: string, communityData: any) {
-    return await communitySchema.findByIdAndUpdate(id, communityData, { new: true });
+    return await communitySchema.findByIdAndUpdate(id, communityData, {
+      new: true,
+    });
   }
 
   async deleteCommunity(id: string) {
@@ -75,25 +75,25 @@ class CommunityService {
       if (!query) {
         return [];
       }
-      
+
       // Use a try-catch block to handle potential regex errors
       let regex;
       try {
-        regex = new RegExp(query, 'i');
+        regex = new RegExp(query, "i");
       } catch (e) {
         // If the query contains special regex characters, escape them
-        regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
       }
-      
+
       return await Community.find({
         $or: [
           { name: { $regex: regex } },
           { description: { $regex: regex } },
-          { tags: { $regex: regex } }
-        ]
+          { tags: { $regex: regex } },
+        ],
       }).limit(10);
     } catch (error) {
-      console.error('Search error:', error);
+      console.error("Search error:", error);
       throw error;
     }
   }
@@ -102,12 +102,17 @@ class CommunityService {
   async getCommunityWithMembers(communityId: string) {
     try {
       return await Community.findById(communityId)
-        .populate('members', 'username email profilePicture') // Ajustez les champs selon votre modèle User
+        .populate("members", "username email profilePicture") // Ajustez les champs selon votre modèle User
         .exec();
     } catch (error) {
-      console.error('Error fetching community with members:', error);
+      console.error("Error fetching community with members:", error);
       throw error;
     }
+  }
+
+  async countCommunities() {
+    const count = await communitySchema.countDocuments({});
+    return { count };
   }
 }
 

@@ -7,6 +7,7 @@ const UserSchema: Schema = new Schema<IUser>({
   fullName: { type: String, required: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
+  userRole: { type: String, enum: Object.values(RoleEnum), required: false },
   role: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
@@ -21,15 +22,17 @@ const UserSchema: Schema = new Schema<IUser>({
   skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Skill", default: [] }],
   communities: [
     { type: mongoose.Schema.Types.ObjectId, ref: "Community", default: [] },
-  ],  
+  ],
   github: {
     username: String,
-    validatedSkills: [{
-      name: String,
-      reposCount: { type: Number, default: 1 },
-      lastUsed: { type: Date, default: Date.now }
-    }],
-    lastUpdated: Date
+    validatedSkills: [
+      {
+        name: String,
+        reposCount: { type: Number, default: 1 },
+        lastUsed: { type: Date, default: Date.now },
+      },
+    ],
+    lastUpdated: Date,
   },
   challenges: [
     { type: mongoose.Schema.Types.ObjectId, ref: "Challenge", default: [] },
