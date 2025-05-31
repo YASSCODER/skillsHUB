@@ -16,6 +16,7 @@ import SessionModule from "./modules/session/session.module";
 import EventModule from "./modules/Event/event.module";
 import MarketplaceModule from "./modules/Marketplace/Marketplace.module";
 import ContactModule from "./modules/contact/contact.module";
+import CategoryModule from "./modules/Category/Category.module";
 
 const modules = [
   UserModule,
@@ -37,6 +38,7 @@ const modules = [
   MarketplaceModule,
   CalendarModule,
   ContactModule,
+  CategoryModule,
 ];
 
 const appRegisterModules = (app: Application): void => {
