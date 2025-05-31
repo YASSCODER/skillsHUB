@@ -39,6 +39,15 @@ class UserService {
     return newUser;
   }
 
+  async findUserByResetToken(token: string) {
+    const userFound = userSchema.findOne({
+      resetToken: token,
+      resetTokenExpiresAt: { $gt: Date.now() },
+    });
+
+    return userFound;
+  }
+
   async updateUser(id: string, userData: any) {
     return await userSchema.findByIdAndUpdate(id, userData, { new: true });
   }
