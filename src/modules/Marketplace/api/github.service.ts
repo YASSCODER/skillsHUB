@@ -15,14 +15,23 @@ interface ValidatedSkill {
 export class GitHubService {
   private static readonly API_URL = 'https://api.github.com';
 
-  // Ajoutez cette méthode manquante
-  static async validateSkill(username: string, skill: string): Promise<boolean> {
-    const repos = await this.getUserRepos(username);
+
+static async validateSkill(username: string, skill: string): Promise<boolean> {
+  try {
+    const repos = await this.getUserRepos(username);  // Appel API GitHub
+    // Vérifie que repos est bien un tableau
+    if (!Array.isArray(repos)) throw new Error("Invalid repos format");
+
     return repos.some(repo => 
       repo.language?.toLowerCase() === skill.toLowerCase() || 
-      repo.description?.toLowerCase().includes(skill.toLowerCase())
+      (repo.description?.toLowerCase().includes(skill.toLowerCase()))
     );
+  } catch (err) {
+    console.error("validateSkill error:", err);
+    throw err; // Remonte l’erreur pour que le controller la capture
   }
+}
+
 
   static async scanUserSkills(username: string): Promise<ValidatedSkill[]> {
     const repos = await this.getUserRepos(username);

@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
-import MarketplaceService from "./Marketplace.service";
+import MarketplaceService from "./Marketplace.service"
 import UserModel from "../../../common/models/types/user.schema";
 import { GitHubService } from "../api/github.service";
 class MarketplaceController {
+
   static async getAllSkills(req: Request, res: Response) {
     try {
       const Skills = await MarketplaceService.getAllSkills();
@@ -46,25 +47,22 @@ class MarketplaceController {
     try {
       console.log("Updating skill with ID:", req.params.id);
       console.log("Update data:", req.body);
-
-      const updatedSkill = await MarketplaceService.updateSkill(
-        req.params.id,
-        req.body
-      );
+      
+      const updatedSkill = await MarketplaceService.updateSkill(req.params.id, req.body);
       if (!updatedSkill)
         return res.status(404).json({ error: "Skill not found" });
-
+      
       console.log("Skill updated successfully:", updatedSkill);
       res.json(updatedSkill);
     } catch (error) {
       console.error("UPDATE SKILL ERROR:", error);
-
+      
       // Fournir un message d'erreur plus spécifique
       let errorMessage = "Failed to update Skill";
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-
+      
       res.status(500).json({ error: errorMessage });
     }
   }
@@ -87,27 +85,22 @@ class MarketplaceController {
         return res.status(400).json({ error: "categoryId is required" });
       }
 
-      const skills = await MarketplaceService.getSkillsByCategory(
-        categoryId as string
-      );
+      const skills = await MarketplaceService.getSkillsByCategory(categoryId as string);
 
       if (!skills.length) {
-        return res
-          .status(404)
-          .json({ error: "No skills found for this category" });
+        return res.status(404).json({ error: "No skills found for this category" });
       }
 
       res.json(skills);
     } catch (error) {
       console.error("GET SKILLS BY CATEGORY ERROR:", error);
       // Solution type-safe
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch skills by category";
+    const errorMessage = error instanceof Error
+    ? error.message
+    : "Failed to fetch skills by category";
 
-      res.status(500).json({ error: errorMessage });
-    }
+  res.status(500).json({ error: errorMessage });
+ }
   }
   static async matchSkills(req: Request, res: Response) {
     try {
@@ -115,13 +108,13 @@ class MarketplaceController {
       if (!userId) {
         return res.status(400).json({ error: "userId requis" });
       }
-      const matches = await MarketplaceService.matchingSkills(userId as string);
+      console.log("Tentative de matching pour userId:", userId);
+const matches = await MarketplaceService.matchingSkills(userId as string);
+console.log("Matching réussi, résultats:", matches);
       res.json(matches);
     } catch (error) {
       console.error("Erreur matching:", error);
-      res
-        .status(500)
-        .json({ error: "Erreur lors du matching des compétences" });
+      res.status(500).json({ error: "Erreur lors du matching des compétences" });
     }
   }
 
@@ -139,107 +132,82 @@ class MarketplaceController {
     res.status(500).json({ error: "Erreur lors du matching des compétences" });
   }
 }*/
-  static async findUsersWithSkill(req: Request, res: Response) {
-    try {
-      const { skillname } = req.query; // On récupère le nom du skill depuis les paramètres de la requête
+static async findUsersWithSkill(req: Request, res: Response) {
+  try {
+    const { skillname } = req.query;  // On récupère le nom du skill depuis les paramètres de la requête
 
-      if (!skillname) {
-        return res.status(400).json({ error: "Skill name is required" }); // Si le nom du skill n'est pas fourni, on retourne une erreur
-      }
-
-      // On appelle la méthode du service pour récupérer les utilisateurs avec ce skill
-      const usersWithSkill = await MarketplaceService.findUsersWithSkill(
-        skillname as string
-      );
-
-      // Si aucun utilisateur n'est trouvé
-      if (!usersWithSkill.length) {
-        return res
-          .status(404)
-          .json({ error: `No users found with skill '${skillname}'` });
-      }
-
-      // Si des utilisateurs sont trouvés, on les renvoie
-      res.status(200).json(usersWithSkill);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to fetch users with skill" });
+    if (!skillname) {
+      return res.status(400).json({ error: "Skill name is required" });  // Si le nom du skill n'est pas fourni, on retourne une erreur
     }
-  }
 
-  static async verifyGitHubSkills(req: Request, res: Response) {
-    try {
-      const { userId } = req.params;
-      const { githubUsername } = req.body;
+    // On appelle la méthode du service pour récupérer les utilisateurs avec ce skill
+    const usersWithSkill = await MarketplaceService.findUsersWithSkill(skillname as string);
 
-      if (!githubUsername) {
-        return res.status(400).json({ error: "GitHub username is required" });
-      }
-
-      const user = await UserModel.findById(userId);
-      if (!user) return res.status(404).json({ error: "User not found" });
-
-      const skills = await GitHubService.scanUserSkills(githubUsername);
-
-      // Solution alternative sans méthode d'instance
-      user.github = {
-        username: githubUsername,
-        validatedSkills: skills,
-        lastUpdated: new Date(),
-      };
-
-      const updatedUser = await user.save();
-
-      res.json({
-        message: "GitHub skills updated successfully",
-        skills: updatedUser.github?.validatedSkills,
-      });
-    } catch (error) {
-      console.error("GitHub verification error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "GitHub verification failed";
-      res.status(500).json({ error: errorMessage });
+    // Si aucun utilisateur n'est trouvé
+    if (!usersWithSkill.length) {
+      return res.status(404).json({ error: `No users found with skill '${skillname}'` });
     }
+
+    // Si des utilisateurs sont trouvés, on les renvoie
+    res.status(200).json(usersWithSkill);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch users with skill" });
   }
+}
+//Scanner toutes les compétences GitHub d’un utilisateur et mettre à jour directement son profil dans la base de données.
+static async verifyGitHubSkills(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const { githubUsername } = req.body;
 
-  static async checkSkill(req: Request, res: Response) {
-    try {
-      const { username, skill } = req.query;
-
-      if (!username || !skill) {
-        return res
-          .status(400)
-          .json({ error: "Username and skill parameters are required" });
-      }
-
-      const isValid = await GitHubService.validateSkill(
-        username as string,
-        skill as string
-      );
-      res.json({ skill, isValid });
-    } catch (error) {
-      console.error("Skill validation error:", error);
-      res.status(500).json({ error: "Skill validation failed" });
+    if (!githubUsername) {
+      return res.status(400).json({ error: "GitHub username is required" });
     }
-  }
 
-  static async getSkillsByIds(req: Request, res: Response) {
-    try {
-      let ids = req.query.ids;
-      if (!ids) {
-        return res.status(400).json({ error: "No IDs provided" });
-      }
-      if (typeof ids === "string") {
-        ids = [ids];
-      }
-      const skills = await MarketplaceService.getSkillsByIds(ids as string[]);
-      res.status(200).json(skills);
-    } catch (error: any) {
-      res.status(400).json({
-        error: error.message || "Erreur lors de la récupération des skills",
-      });
-    }
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const skills = await GitHubService.scanUserSkills(githubUsername);
+
+    // Solution alternative sans méthode d'instance
+    user.github = {
+      username: githubUsername,
+      validatedSkills: skills,
+      lastUpdated: new Date()
+    };
+
+    const updatedUser = await user.save();
+
+    res.json({
+      message: "GitHub skills updated successfully",
+      skills: updatedUser.github?.validatedSkills
+    });
+  } catch (error) {
+    console.error("GitHub verification error:", error);
+    const errorMessage = error instanceof Error ? error.message : "GitHub verification failed";
+    res.status(500).json({ error: errorMessage });
   }
+}
+//Vérifier une compétence spécifique pour un utilisateur GitHub donné, sans toucher à la base.
+static async checkSkill(req: Request, res: Response) {
+  try {
+    const { username, skill } = req.query;
+
+    if (!username || !skill) {
+      return res.status(400).json({ error: "Username and skill parameters are required" });
+    }
+
+    const isValid = await GitHubService.validateSkill(username as string, skill as string);
+    res.json({ skill, isValid });
+  } catch (error) {
+    console.error("Skill validation error:", error);
+    // Ajoutons un message plus complet pour debugging
+    const message = error instanceof Error ? error.message : JSON.stringify(error);
+    res.status(500).json({ error: `Skill validation failed: ${message}` });
+  }
+}
+
 }
 
 export default MarketplaceController;
