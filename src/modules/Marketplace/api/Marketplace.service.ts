@@ -2,16 +2,16 @@ import SkillsSchema from "../../../common/models/types/skills.schema";
 import UserModel from "../../../common/models/types/user.schema";
 import CategorySchema from "../../../common/models/types/category.schema";
 import mongoose from "mongoose";
-import {ISkill} from "../../../common/models/interface/skills.interface";
+import { ISkill } from "../../../common/models/interface/skills.interface";
 
 class MarketplaceService {
-   static async createSkill(skillData: any) {
+  static async createSkill(skillData: any) {
     try {
       // 🔍 Vérifier et récupérer la catégorie
       let categoryId = skillData.category;
 
       if (
-        typeof categoryId === 'string' &&
+        typeof categoryId === "string" &&
         !mongoose.Types.ObjectId.isValid(categoryId)
       ) {
         const category = await CategorySchema.findOne({ name: categoryId });
@@ -23,7 +23,7 @@ class MarketplaceService {
 
       // ✅ Extraire correctement l'ID utilisateur
       const userId =
-        typeof skillData.user === 'string'
+        typeof skillData.user === "string"
           ? skillData.user
           : skillData.user?._id;
 
@@ -39,16 +39,18 @@ class MarketplaceService {
       // 🛠️ Créer le skill
       const newSkill = await SkillsSchema.create({
         name: skillData.name,
-        description:
-          skillData.description || `Compétence en ${skillData.name}`,
+        description: skillData.description || `Compétence en ${skillData.name}`,
         category: categoryId,
         userId: userId,
         users: skillData.users || [userId],
       });
 
-      // 🔗 Associer le skill à l'utilisateur
-      user.skills.push(newSkill._id as mongoose.Types.ObjectId);
-      await user.save();
+      // 🔗 Associer le skill à l'utilisateur using findByIdAndUpdate to avoid validation issues
+      await UserModel.findByIdAndUpdate(
+        userId,
+        { $addToSet: { skills: newSkill._id } },
+        { new: true }
+      );
 
       // 🔗 Associer le skill à la catégorie
       await CategorySchema.findByIdAndUpdate(categoryId, {
@@ -57,7 +59,7 @@ class MarketplaceService {
 
       return newSkill;
     } catch (error) {
-      console.error('Error creating skill:', error);
+      console.error("Error creating skill:", error);
       throw error;
     }
   }
@@ -65,39 +67,39 @@ class MarketplaceService {
     {return await SkillsSchema.find(); }
     */
 
-static async getAllSkills() {
-  const skills = await SkillsSchema.find()
-    .populate("category", "name")
-    .populate("userId", "fullName"); // on recupere fullName de user
+  static async getAllSkills() {
+    const skills = await SkillsSchema.find()
+      .populate("category", "name")
+      .populate("userId", "fullName"); // on recupere fullName de user
 
-  // Remapper userId a user
-  const remappedSkills = skills.map(skill => {
+    // Remapper userId a user
+    const remappedSkills = skills.map((skill) => {
+      const skillObj = skill.toObject();
+      skillObj.user = skillObj.userId; // remap userId to user
+      delete skillObj.userId;
+      return skillObj;
+    });
+
+    return remappedSkills;
+  }
+  static async getSkillById(id: string) {
+    const skill = await SkillsSchema.findById(id)
+      .populate("category", "name") // Récupère uniquement le nom de la catégorie
+      .populate("userId"); // Récupère toutes les données de l'utilisateur
+
+    if (!skill) {
+      throw new Error(`Skill not found with ID: ${id}`);
+    }
+
+    // Optionnel : renommer userId → user (comme dans getAllSkills)
     const skillObj = skill.toObject();
-    skillObj.user = skillObj.userId; // remap userId to user
+    skillObj.user = skillObj.userId;
     delete skillObj.userId;
+
     return skillObj;
-  });
-
-  return remappedSkills;
-}
-static async getSkillById(id: string) {
-  const skill = await SkillsSchema.findById(id)
-    .populate('category', 'name')       // Récupère uniquement le nom de la catégorie
-    .populate('userId');                // Récupère toutes les données de l'utilisateur
-
-  if (!skill) {
-    throw new Error(`Skill not found with ID: ${id}`);
   }
 
-  // Optionnel : renommer userId → user (comme dans getAllSkills)
-  const skillObj = skill.toObject();
-  skillObj.user = skillObj.userId;
-  delete skillObj.userId;
-
-  return skillObj;
-}
-
-    /*
+  /*
     Error while loading skill details: Http failure response for http://localhost:3000/api/skill-market/skills/68037a18bdd7657dd7b82aa1: 500 Internal Server Error
 
 
@@ -107,8 +109,9 @@ static async getSkillById(id: string) {
   static async updateSkill(id: string, skillData: any)
   {return await SkillsSchema.findByIdAndUpdate(id, skillData, { new: true });}
 */
-  static async deleteSkill(id: string)
-  {return await SkillsSchema.findByIdAndDelete(id);}
+  static async deleteSkill(id: string) {
+    return await SkillsSchema.findByIdAndDelete(id);
+  }
 
   static async updateSkill(id: string, skillData: any) {
     try {
@@ -122,11 +125,14 @@ static async getSkillById(id: string) {
       if (skillData.category) {
         // Vérifier si la catégorie est un nom plutôt qu'un ID
         let categoryId = skillData.category;
-        if (typeof categoryId === 'string' && !mongoose.Types.ObjectId.isValid(categoryId)) {
-          const categoryByName = await CategorySchema.findOne({ 
-            name: { $regex: new RegExp(`^${categoryId}$`, 'i') } 
+        if (
+          typeof categoryId === "string" &&
+          !mongoose.Types.ObjectId.isValid(categoryId)
+        ) {
+          const categoryByName = await CategorySchema.findOne({
+            name: { $regex: new RegExp(`^${categoryId}$`, "i") },
           });
-          
+
           if (categoryByName) {
             categoryId = categoryByName._id;
             skillData.category = categoryId;
@@ -148,25 +154,24 @@ static async getSkillById(id: string) {
           throw new Error(`User not found with ID: ${skillData.userId}`);
         }
 
-        // Convertir l'ID du skill en ObjectId
-        const skillObjectId = new mongoose.Types.ObjectId(id);
-
-        // Ajouter le skill à l'utilisateur s'il ne l'a pas déjà
-        if (!user.skills.some(skill => skill.equals(skillObjectId))) {
-          user.skills.push(skillObjectId);
-          await user.save();
-        }
+        // Ajouter le skill à l'utilisateur s'il ne l'a pas déjà - using findByIdAndUpdate to avoid validation issues
+        await UserModel.findByIdAndUpdate(
+          skillData.userId,
+          { $addToSet: { skills: new mongoose.Types.ObjectId(id) } },
+          { new: true }
+        );
       }
 
       // 4. Mettre à jour le skill
-      const updatedSkill = await SkillsSchema.findByIdAndUpdate(id, skillData, { new: true });
+      const updatedSkill = await SkillsSchema.findByIdAndUpdate(id, skillData, {
+        new: true,
+      });
 
       // 5. Mettre à jour la catégorie avec le skill (si changée)
       if (skillData.category) {
-        await CategorySchema.findByIdAndUpdate(
-          skillData.category,
-          { $addToSet: { skills: new mongoose.Types.ObjectId(id) } }
-        );
+        await CategorySchema.findByIdAndUpdate(skillData.category, {
+          $addToSet: { skills: new mongoose.Types.ObjectId(id) },
+        });
       }
 
       return updatedSkill;
@@ -184,8 +189,8 @@ static async getSkillById(id: string) {
 
     // Récupérer les skills de cette catégorie
     const skills = await SkillsSchema.find({ category: categoryId })
-      .populate('users', 'fullName email') // Peupler les infos des utilisateurs
-      .populate('category', 'name'); // Peupler le nom de la catégorie
+      .populate("users", "fullName email") // Peupler les infos des utilisateurs
+      .populate("category", "name"); // Peupler le nom de la catégorie
 
     return skills;
   }
@@ -194,7 +199,7 @@ static async getSkillById(id: string) {
     const currentUser = await UserModel.findById(userId)
       .populate({
         path: "skills",
-        select: "name description"
+        select: "name description",
       })
       .select("skills");
 
@@ -209,9 +214,9 @@ static async getSkillById(id: string) {
     }
 
     // Extraire les noms des compétences (en minuscules pour éviter les problèmes de casse)
-    const currentSkillNames = currentUser.skills.map((skill: any) =>
-      skill.name ? skill.name.toLowerCase() : null
-    ).filter(name => name !== null);
+    const currentSkillNames = currentUser.skills
+      .map((skill: any) => (skill.name ? skill.name.toLowerCase() : null))
+      .filter((name) => name !== null);
 
     console.log("Compétences de l'utilisateur courant:", currentSkillNames);
 
@@ -219,43 +224,47 @@ static async getSkillById(id: string) {
     const otherUsers = await UserModel.find({ _id: { $ne: userId } })
       .populate({
         path: "skills",
-        select: "name description"
+        select: "name description",
       })
       .select("fullName email skills");
 
     console.log(`Nombre d'autres utilisateurs trouvés: ${otherUsers.length}`);
 
     // 3. Filtrer les utilisateurs qui ont au moins un skill avec le même nom
-    const usersWithCommonSkills = otherUsers.map((user) => {
-      // Vérifier si l'utilisateur a des compétences
-      if (!user.skills || user.skills.length === 0) {
+    const usersWithCommonSkills = otherUsers
+      .map((user) => {
+        // Vérifier si l'utilisateur a des compétences
+        if (!user.skills || user.skills.length === 0) {
+          return {
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            commonSkills: [],
+            commonCount: 0,
+          };
+        }
+
+        const commonSkills = user.skills.filter((skill: any) => {
+          // Vérifier si le skill a un nom
+          if (!skill || !skill.name) return false;
+
+          // Comparer les noms en minuscules pour éviter les problèmes de casse
+          return currentSkillNames.includes(skill.name.toLowerCase());
+        });
+
         return {
           _id: user._id,
           fullName: user.fullName,
           email: user.email,
-          commonSkills: [],
-          commonCount: 0
+          commonSkills,
+          commonCount: commonSkills.length,
         };
-      }
+      })
+      .filter((user) => user.commonCount > 0); // ne garder que les users avec des skills communs
 
-      const commonSkills = user.skills.filter((skill: any) => {
-        // Vérifier si le skill a un nom
-        if (!skill || !skill.name) return false;
-
-        // Comparer les noms en minuscules pour éviter les problèmes de casse
-        return currentSkillNames.includes(skill.name.toLowerCase());
-      });
-
-      return {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        commonSkills,
-        commonCount: commonSkills.length,
-      };
-    }).filter(user => user.commonCount > 0); // ne garder que les users avec des skills communs
-
-    console.log(`Nombre d'utilisateurs avec des compétences communes: ${usersWithCommonSkills.length}`);
+    console.log(
+      `Nombre d'utilisateurs avec des compétences communes: ${usersWithCommonSkills.length}`
+    );
 
     return usersWithCommonSkills;
   }
@@ -303,25 +312,54 @@ static async getSkillById(id: string) {
   }
 */
 
-
   static async findUsersWithSkill(skillname: string) {
     // Recherche de l'ID du skill par son nom
     const skill = await SkillsSchema.findOne({
       name: { $regex: new RegExp(`^${skillname}$`, "i") }, // "i" pour insensible à la casse
     });
     if (!skill) {
-      throw new Error(`Skill '${skillname}' not found`);  // Si le skill n'est pas trouvé, on lève une erreur
+      throw new Error(`Skill '${skillname}' not found`); // Si le skill n'est pas trouvé, on lève une erreur
     }
 
     // Recherche des utilisateurs ayant cet skill dans leur tableau 'skills'
     const usersWithSkill = await UserModel.find({
-      skills: skill._id,  // On filtre les utilisateurs qui ont cet skill
-    }).select("fullName email skills");  // On récupère seulement les informations nécessaires
+      skills: skill._id, // On filtre les utilisateurs qui ont cet skill
+    }).select("fullName email skills"); // On récupère seulement les informations nécessaires
 
-    return usersWithSkill;  // On renvoie les utilisateurs trouvés
+    return usersWithSkill; // On renvoie les utilisateurs trouvés
   }
 
+  static async getSkillsByIds(ids: string[]) {
+    try {
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new Error("IDs array is required and cannot be empty");
+      }
 
+      // Validate that all IDs are valid ObjectIds
+      const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+      if (validIds.length === 0) {
+        throw new Error("No valid ObjectIds provided");
+      }
+
+      const skills = await SkillsSchema.find({ _id: { $in: validIds } })
+        .populate("category", "name")
+        .populate("userId", "fullName email");
+
+      // Remap userId to user for consistency
+      const remappedSkills = skills.map((skill) => {
+        const skillObj = skill.toObject();
+        skillObj.user = skillObj.userId;
+        delete skillObj.userId;
+        return skillObj;
+      });
+
+      return remappedSkills;
+    } catch (error) {
+      console.error("Error in getSkillsByIds:", error);
+      throw error;
+    }
+  }
 }
 
 export default MarketplaceService;

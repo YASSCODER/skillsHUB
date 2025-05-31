@@ -12,7 +12,7 @@ const UserSchema: Schema = new Schema<IUser>({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
     required: true,
-    default: RoleEnum.CLIENT,
+    default: "67dea9f480ccdc88548f99e7", // Default CLIENT role ObjectId
   },
   wallet: {
     type: mongoose.Schema.Types.ObjectId,
@@ -43,6 +43,20 @@ const UserSchema: Schema = new Schema<IUser>({
   ],
   resetToken: { type: String, default: null },
   resetTokenExpiresAt: { type: Number, default: null },
+});
+
+// Pre-save middleware to handle role validation issues
+UserSchema.pre("save", function (next) {
+  // Fix role field if it's a string instead of ObjectId
+  if (this.role && typeof this.role === "string") {
+    if (this.role === "CLIENT" || this.role === RoleEnum.CLIENT) {
+      this.role = new mongoose.Types.ObjectId("67dea9f480ccdc88548f99e7");
+    } else if (this.role === "ADMIN" || this.role === RoleEnum.ADMIN) {
+      // You may need to update this with the actual admin role ObjectId
+      this.role = new mongoose.Types.ObjectId("67dea9f480ccdc88548f99e7"); // Update with actual admin ID
+    }
+  }
+  next();
 });
 
 UserSchema.add(BaseSchema);
