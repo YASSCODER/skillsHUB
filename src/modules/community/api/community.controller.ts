@@ -1,14 +1,14 @@
-import { Request, Response } from 'express';
-import communityService from './community.service';
-import { CommunityModel } from '../../../common/models/community.model';
-import Community from '../../../common/models/types/community.schema';
+import { Request, Response } from "express";
+import communityService from "./community.service";
+import { CommunityModel } from "../../../common/models/community.model";
+import Community from "../../../common/models/types/community.schema";
 
 class CommunityController {
   // ✅ Créer une communauté
   static async createCommunity(req: Request, res: Response): Promise<void> {
     try {
       console.log("Creating community with data:", req.body);
-      
+
       // Commentez temporairement la vérification d'authentification pour les tests
       /*
       if (!req.user) {
@@ -19,39 +19,47 @@ class CommunityController {
         return;
       }
       */
-      
+
       const communityData = req.body;
-      
+
       // Utilisez un ID de créateur par défaut pour les tests
       communityData.creator = "64f8b8e55a1c9b1c5e8b4567"; // Utilisez un ID valide de votre base de données
-      
+
       const community = await communityService.createCommunity(communityData);
       console.log("Community created:", community);
-      
+
       res.status(201).json({
         success: true,
-        data: community
+        data: community,
       });
     } catch (error: any) {
       console.error("Error creating community:", error);
       res.status(400).json({
         success: false,
-        message: error.message || 'Erreur lors de la création de la communauté'
+        message: error.message || "Erreur lors de la création de la communauté",
       });
     }
   }
 
-  static async getAllCommunities(req: Request, res: Response): Promise<Response> {
+  static async getAllCommunities(
+    req: Request,
+    res: Response
+  ): Promise<Response> {
     try {
       const communities = await communityService.getAllCommunities();
       return res.status(200).json(communities);
     } catch (err) {
-      return res.status(500).json({ error: 'Erreur récupération communautés', details: err });
+      return res
+        .status(500)
+        .json({ error: "Erreur récupération communautés", details: err });
     }
   }
 
   // ✅ Récupérer une communauté par son ID
-  static async getCommunityById(req: Request, res: Response): Promise<Response> {
+  static async getCommunityById(
+    req: Request,
+    res: Response
+  ): Promise<Response> {
     try {
       const { id } = req.params;
       const community = await communityService.getCommunityById(id.trim());
@@ -71,7 +79,10 @@ class CommunityController {
   static async updateCommunity(req: Request, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
-      const updatedCommunity = await communityService.updateCommunity(id.trim(), req.body);
+      const updatedCommunity = await communityService.updateCommunity(
+        id.trim(),
+        req.body
+      );
 
       if (!updatedCommunity) {
         return res.status(404).json({ error: "Community not found" });
@@ -79,7 +90,7 @@ class CommunityController {
 
       return res.json({
         message: "Community updated successfully",
-        community: updatedCommunity
+        community: updatedCommunity,
       });
     } catch (error) {
       console.error(error);
@@ -91,7 +102,9 @@ class CommunityController {
   static async deleteCommunity(req: Request, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
-      const deletedCommunity = await communityService.deleteCommunity(id.trim());
+      const deletedCommunity = await communityService.deleteCommunity(
+        id.trim()
+      );
 
       if (!deletedCommunity) {
         return res.status(404).json({ error: "Community not found" });
@@ -108,7 +121,10 @@ class CommunityController {
   static async isUserMember(req: Request, res: Response): Promise<Response> {
     try {
       const { idCommunity, idUser } = req.params;
-      const isMember = await communityService.isUserMember(idCommunity.trim(), idUser.trim());
+      const isMember = await communityService.isUserMember(
+        idCommunity.trim(),
+        idUser.trim()
+      );
 
       return res.json({ isMember });
     } catch (error) {
@@ -122,35 +138,39 @@ class CommunityController {
     try {
       const { communityId, userId } = req.params;
       console.log(`Adding member ${userId} to community ${communityId}`);
-      
+
       // Vérifier que les paramètres sont présents
       if (!communityId || !userId) {
         res.status(400).json({
           success: false,
-          message: 'ID de communauté ou d\'utilisateur manquant'
+          message: "ID de communauté ou d'utilisateur manquant",
         });
         return;
       }
-      
+
       try {
         // Ajouter le membre à la communauté
-        const community = await communityService.addMemberToCommunity(communityId, userId);
-        
+        const community = await communityService.addMemberToCommunity(
+          communityId,
+          userId
+        );
+
         res.status(200).json({
           success: true,
-          data: community
+          data: community,
         });
       } catch (serviceError: any) {
         // Gérer spécifiquement l'erreur "User is already a member"
         if (serviceError.message === "User is already a member") {
-          res.status(409).json({  // 409 Conflict est approprié ici
+          res.status(409).json({
+            // 409 Conflict est approprié ici
             success: false,
-            message: 'L\'utilisateur est déjà membre de cette communauté'
+            message: "L'utilisateur est déjà membre de cette communauté",
           });
         } else if (serviceError.message === "Community not found") {
           res.status(404).json({
             success: false,
-            message: 'Communauté non trouvée'
+            message: "Communauté non trouvée",
           });
         } else {
           // Relancer l'erreur pour qu'elle soit gérée par le bloc catch externe
@@ -158,10 +178,10 @@ class CommunityController {
         }
       }
     } catch (error: any) {
-      console.error('Error adding member:', error);
+      console.error("Error adding member:", error);
       res.status(500).json({
         success: false,
-        message: error.message || 'Erreur lors de l\'ajout du membre'
+        message: error.message || "Erreur lors de l'ajout du membre",
       });
     }
   }
@@ -171,36 +191,39 @@ class CommunityController {
     try {
       const { communityId, userId } = req.params;
       console.log(`Removing member ${userId} from community ${communityId}`);
-      
+
       // Vérifier que les paramètres sont présents
       if (!communityId || !userId) {
         res.status(400).json({
           success: false,
-          message: 'ID de communauté ou d\'utilisateur manquant'
+          message: "ID de communauté ou d'utilisateur manquant",
         });
         return;
       }
-      
+
       // Supprimer le membre de la communauté
-      const community = await communityService.removeMemberFromCommunity(communityId, userId);
-      
+      const community = await communityService.removeMemberFromCommunity(
+        communityId,
+        userId
+      );
+
       if (!community) {
         res.status(404).json({
           success: false,
-          message: 'Communauté non trouvée'
+          message: "Communauté non trouvée",
         });
         return;
       }
-      
+
       res.status(200).json({
         success: true,
-        data: community
+        data: community,
       });
     } catch (error: any) {
-      console.error('Error removing member:', error);
+      console.error("Error removing member:", error);
       res.status(400).json({
         success: false,
-        message: error.message || 'Erreur lors de la suppression du membre'
+        message: error.message || "Erreur lors de la suppression du membre",
       });
     }
   }
@@ -209,29 +232,29 @@ class CommunityController {
   static async searchCommunities(req: Request, res: Response): Promise<void> {
     try {
       const query = req.query.q as string;
-      console.log('Search query received:', query); // Ajout de log pour déboguer
-      
+      console.log("Search query received:", query); // Ajout de log pour déboguer
+
       if (!query) {
         res.status(400).json({
           success: false,
-          message: 'Paramètre de recherche requis'
+          message: "Paramètre de recherche requis",
         });
         return;
       }
-      
+
       const communities = await communityService.searchCommunities(query);
-      console.log('Search results:', communities.length); // Ajout de log pour déboguer
-      
+      console.log("Search results:", communities.length); // Ajout de log pour déboguer
+
       res.status(200).json({
         success: true,
         count: communities.length,
-        data: communities
+        data: communities,
       });
     } catch (error: any) {
-      console.error('Search error:', error);
+      console.error("Search error:", error);
       res.status(500).json({
         success: false,
-        message: error.message || 'Erreur lors de la recherche des communautés'
+        message: error.message || "Erreur lors de la recherche des communautés",
       });
     }
   }
@@ -241,37 +264,48 @@ class CommunityController {
     try {
       const { communityId } = req.params;
       console.log(`Getting members for community ${communityId}`);
-      
+
       // Vérifier que l'ID de la communauté est présent
       if (!communityId) {
         res.status(400).json({
           success: false,
-          message: 'ID de communauté manquant'
+          message: "ID de communauté manquant",
         });
         return;
       }
-      
+
       // Récupérer la communauté avec ses membres
-      const community = await communityService.getCommunityWithMembers(communityId);
-      
+      const community = await communityService.getCommunityWithMembers(
+        communityId
+      );
+
       if (!community) {
         res.status(404).json({
           success: false,
-          message: 'Communauté non trouvée'
+          message: "Communauté non trouvée",
         });
         return;
       }
-      
+
       res.status(200).json({
         success: true,
-        data: community.members
+        data: community.members,
       });
     } catch (error: any) {
-      console.error('Error getting community members:', error);
+      console.error("Error getting community members:", error);
       res.status(500).json({
         success: false,
-        message: error.message || 'Erreur lors de la récupération des membres'
+        message: error.message || "Erreur lors de la récupération des membres",
       });
+    }
+  }
+
+  static async countCommunities(req: Request, res: Response) {
+    try {
+      const result = await communityService.countCommunities();
+      res.json(result);
+    } catch (error) {
+      res.status(404).json({ error: "no community found" });
     }
   }
 }
